@@ -1,0 +1,93 @@
+clear
+tempfile all
+local first 1
+
+foreach y in 2012 2013 2014 2015 2016 {
+    use "\\mssm2\mssm2$\wangy63\Personal\DesktopFiles\pde_`y'.dta", clear
+    rename *, lower
+    gen year = `y'
+    gen ndc = substr(prod_srvc_id, 1, strlen(prod_srvc_id)-2)
+    gen NorHyd = ustrpos(gnn, "NORTRIPTYLINE") > 0
+    gen PCPZ   = ustrpos(gnn, "PROCHLORPERAZINE") > 0
+    keep if NorHyd | PCPZ
+
+    if `first' {
+        save `all', replace
+        local first 0
+    }
+    else {
+        append using `all'
+        save `all', replace
+    }
+}
+
+use `all', clear
+save "\\mssm2\mssm2$\wangy63\Personal\DesktopFiles\pde_2012_2016_norhyd_pcpz.dta", replace
+
+
+
+log using "J:\Geriatrics\Litke_CMS\5yr Request\Results\Yihan\TSDD 0317.smcl",replace 
+
+use "\\mssm2\mssm2$\wangy63\Personal\DesktopFiles\pde_2012_2016_norhyd_pcpz.dta",clear
+
+tab str 
+
+drop if str=="10 MG/2 ML" | str=="10 MG/5 ML" | str=="5 MG/ML"
+
+gen str_num = real(subinstr(str, " MG", "", .))
+tab str_num
+
+gen NorHyd_sdd = str_num * qty_dspnsd_num / 30 if NorHyd==1
+
+format NorHyd_sdd %9.2f
+
+gen PCPZ_sdd = str_num * qty_dspnsd_num / 15 if PCPZ==1
+
+tab str if NorHyd==1 
+tab str if PCPZ==1 
+
+format PCPZ_sdd %9.2f
+
+*total SDD per beneficiary per year
+bysort bene_id: egen NorHyd_TSDD = total(NorHyd_sdd)
+bysort bene_id: egen PCPZ_TSDD   = total(PCPZ_sdd)
+
+format NorHyd_sdd NorHyd_TSDD PCPZ_sdd PCPZ_TSDD %9.2f
+
+replace NorHyd_TSDD = . if NorHyd_TSDD == 0
+replace PCPZ_TSDD = . if PCPZ_TSDD == 0
+
+sum NorHyd_sdd 
+tab NorHyd_sdd
+
+sum PCPZ_sdd
+tab PCPZ_sdd
+
+sum NorHyd_TSDD
+tab NorHyd_TSDD
+
+sum PCPZ_TSDD
+tab PCPZ_TSDD
+
+collapse (sum) NorHyd_sdd PCPZ_sdd, by(bene_id year)
+
+rename NorHyd_sdd NorHyd_TSDD
+rename PCPZ_sdd   PCPZ_TSDD
+
+format NorHyd_TSDD PCPZ_TSDD %9.2f
+
+replace NorHyd_TSDD = . if NorHyd_TSDD == 0
+replace PCPZ_TSDD = . if PCPZ_TSDD == 0
+
+levelsof year, local(years)
+
+foreach y of local years {
+    di "===== Year `y' ====="
+    
+    sum NorHyd_TSDD if year==`y'
+    sum PCPZ_TSDD   if year==`y'
+}
+
+translate "J:\Geriatrics\Litke_CMS\5yr Request\Results\Yihan\TSDD 0317.smcl" "J:\Geriatrics\Litke_CMS\5yr Request\Results\Yihan\TSDD 0317.pdf"
+
+log close

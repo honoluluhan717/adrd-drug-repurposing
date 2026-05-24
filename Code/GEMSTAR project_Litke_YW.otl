@@ -1,0 +1,1097 @@
+= V4 Outline MultiLine NoSorting TabWidth=30
+
+H="set up "
+
+global medi "J:\Geriatrics\Litke_CMS\2019\Raw Data"
+
+
+//Intermediate Data Path
+global intpath  "J:\Geriatrics\Litke_CMS\2019\Int Data"
+
+// Final Data Path
+global datapath  "J:\Geriatrics\Litke_CMS\2019\Raw Data"
+
+//Log files path
+global outpath  "J:\Geriatrics\Litke_CMS\2019\Raw Data\Output\in_progress"
+
+
+H="create dementia flags (old method - skip)"
+//append and merge all medicare data 
+//carrier
+use "${datapath}/carrier_claims/carrier_claims.dta", clear 
+	rename *,lower
+	keep bene_id icd_dgns_cd*
+	gen alzeimers_flag=0
+	gen dem_flag=0
+	gen dem_risk_flag=0
+	
+		forvalues i=1/12 {
+			replace alzeimers_flag=1 if inlist(icd_dgns_cd`i', "G300", "G301", "G308", "G309")
+			replace dem_flag=1 if inlist(icd_dgns_cd`i', "G300", "G301", "G308", "G309", "G3101", "G3109") | inlist(icd_dgns_cd`i', "G310", "G3183", "F0150", "F0151", "I679", "G3184", "F067") | inlist(icd_dgns_cd`i', "F0280", "F0281", "G311") | inlist(substr(icd_dgns_cd`i',1,3),"F03") 
+			replace dem_risk_flag=1 if inlist(icd_dgns_cd`i', "G300", "G301", "G308", "G309", "G3101", "G3109") | inlist(icd_dgns_cd`i', "G310", "G3183", "F0150", "F0151", "I679", "G3184", "F067") | inlist(icd_dgns_cd`i', "E0800", "E0801", "E0810", "E0811", "E08618", "E08620", "E08621", "E08622") | inlist(icd_dgns_cd`i', "E08628", "E08630", "E08638", "E08641", "E08649", "E0865", "E0869", "E088") | inlist(icd_dgns_cd`i', "E089", "E0900", "E0901", "E0910", "E0911", "E09618", "E09620", "E09621") | inlist(icd_dgns_cd`i', "E09622", "E09628", "E09630", "E09638", "E09641", "E09649", "E0965", "E0969") | inlist(icd_dgns_cd`i', "E098", "E099", "E1010", "E1011", "E10618", "E10620", "E10621", "E10622") | inlist(icd_dgns_cd`i', "E10628", "E10630", "E10638", "E10641", "E10649", "E1065", "E1069", "E108") | inlist(icd_dgns_cd`i', "E109", "E1100", "E1101", "E11618", "E11620", "E11621", "E11622", "E11628") | inlist(icd_dgns_cd`i', "E11630", "E11638", "E11641", "E11649", "E1165", "E1169", "E118", "E119" ) | inlist(icd_dgns_cd`i', "E1300", "E1301", "E1310", "E1311", "E13618", "E13620", "E13621", "E13622" ) | inlist(icd_dgns_cd`i', "E13628", "E13630", "E13638", "E13641", "E13649", "E1365", "E1369", "E138" ) | inlist(icd_dgns_cd`i', "E139", "R81", "H35031", "H35032", "H35033", "H35039", "I10", "I110" ) | inlist(icd_dgns_cd`i', "I119", "I120", "I129", "I130", "I1310", "I1311", "I132", "I150") | inlist(icd_dgns_cd`i', "I151", "I152", "I158", "I159", "I160", "I161", "I169", "I1A0") | inlist(icd_dgns_cd`i', "N262", "E660", "E6601", "E6609", "E661", "E662", "E663", "E668") | inlist(icd_dgns_cd`i', "E669", "F204", "F313", "F314", "F315", "F32X", "F321", "F322") | inlist(icd_dgns_cd`i', "F323", "F324", "F325", "F328", "F332", "F333", "F334", "F338") | inlist(icd_dgns_cd`i', "F339", "F341", "F412", "F418", "F200", "F201", "F202", "F203") | inlist(icd_dgns_cd`i', "F205", "F208", "F209", "F22", "F23", "F24", "F250" ) | inlist(icd_dgns_cd`i', "F251", "F258", "F259", "F28", "F29", "F302", "F312", "F315") | inlist(icd_dgns_cd`i', "F17", "z72", "S01", "S020", "S021X", "S023X", "S028X", "S029X")  | inlist(icd_dgns_cd`i', "S040X", "S06X", "S07X", "S098X", "S0990", "Q90", "z9181" ) | inlist(icd_dgns_cd`i', "R262", "R296", "R269", "R2689", "F05", "G47")
+}	
+
+keep bene_id alzeimers_flag dem_flag dem_risk_flag
+save "${intpath}/carrier.dta",replace
+
+
+//hospice, outpatient 
+foreach x in hospice outpt {
+	use "${datapath}/`x'_claims/`x'_claims.dta", clear 
+	
+	rename *,lower
+	keep bene_id icd_dgns_cd*
+	gen alzeimers_flag=0
+	gen dem_flag=0
+	gen dem_risk_flag=0
+	
+		forvalues i=1/25 {
+			replace alzeimers_flag=1 if inlist(icd_dgns_cd`i', "G300", "G301", "G308", "G309")
+			replace dem_flag=1 if inlist(icd_dgns_cd`i', "G300", "G301", "G308", "G309", "G3101", "G3109") | inlist(icd_dgns_cd`i', "G310", "G3183", "F0150", "F0151", "I679", "G3184", "F067") | inlist(icd_dgns_cd`i', "F0280", "F0281", "G311") | inlist(substr(icd_dgns_cd`i',1,3),"F03") 
+			replace dem_risk_flag=1 if inlist(icd_dgns_cd`i', "G300", "G301", "G308", "G309", "G3101", "G3109") | inlist(icd_dgns_cd`i', "G310", "G3183", "F0150", "F0151", "I679", "G3184", "F067") | inlist(icd_dgns_cd`i', "E0800", "E0801", "E0810", "E0811", "E08618", "E08620", "E08621", "E08622") | inlist(icd_dgns_cd`i', "E08628", "E08630", "E08638", "E08641", "E08649", "E0865", "E0869", "E088") | inlist(icd_dgns_cd`i', "E089", "E0900", "E0901", "E0910", "E0911", "E09618", "E09620", "E09621") | inlist(icd_dgns_cd`i', "E09622", "E09628", "E09630", "E09638", "E09641", "E09649", "E0965", "E0969") | inlist(icd_dgns_cd`i', "E098", "E099", "E1010", "E1011", "E10618", "E10620", "E10621", "E10622") | inlist(icd_dgns_cd`i', "E10628", "E10630", "E10638", "E10641", "E10649", "E1065", "E1069", "E108") | inlist(icd_dgns_cd`i', "E109", "E1100", "E1101", "E11618", "E11620", "E11621", "E11622", "E11628") | inlist(icd_dgns_cd`i', "E11630", "E11638", "E11641", "E11649", "E1165", "E1169", "E118", "E119" ) | inlist(icd_dgns_cd`i', "E1300", "E1301", "E1310", "E1311", "E13618", "E13620", "E13621", "E13622" ) | inlist(icd_dgns_cd`i', "E13628", "E13630", "E13638", "E13641", "E13649", "E1365", "E1369", "E138" ) | inlist(icd_dgns_cd`i', "E139", "R81", "H35031", "H35032", "H35033", "H35039", "I10", "I110" ) | inlist(icd_dgns_cd`i', "I119", "I120", "I129", "I130", "I1310", "I1311", "I132", "I150") | inlist(icd_dgns_cd`i', "I151", "I152", "I158", "I159", "I160", "I161", "I169", "I1A0") | inlist(icd_dgns_cd`i', "N262", "E660", "E6601", "E6609", "E661", "E662", "E663", "E668") | inlist(icd_dgns_cd`i', "E669", "F204", "F313", "F314", "F315", "F32X", "F321", "F322") | inlist(icd_dgns_cd`i', "F323", "F324", "F325", "F328", "F332", "F333", "F334", "F338") | inlist(icd_dgns_cd`i', "F339", "F341", "F412", "F418", "F200", "F201", "F202", "F203") | inlist(icd_dgns_cd`i', "F205", "F208", "F209", "F22", "F23", "F24", "F250" ) | inlist(icd_dgns_cd`i', "F251", "F258", "F259", "F28", "F29", "F302", "F312", "F315") | inlist(icd_dgns_cd`i', "F17", "z72", "S01", "S020", "S021X", "S023X", "S028X", "S029X")  | inlist(icd_dgns_cd`i', "S040X", "S06X", "S07X", "S098X", "S0990", "Q90", "z9181" ) | inlist(icd_dgns_cd`i', "R262", "R296", "R269", "R2689", "F05", "G47")
+}	
+
+keep bene_id alzeimers_flag dem_flag dem_risk_flag
+save "${intpath}/`x'.dta",replace
+}
+
+
+//medpar 
+use "${datapath}\medpar\medpar_claims.dta", clear 
+rename *,lower
+keep bene_id dgns_*_cd ss_ls_snf_ind_cd los_day_cnt
+drop dgns_e_* dgns_poa_cd
+
+gen alzeimers_flag=0
+gen dem_flag=0 
+gen dem_risk_flag=0
+
+forvalues i=1/25 {
+	replace alzeimers_flag=1 if inlist(dgns_`i'_cd, "G300", "G301", "G308", "G309")
+	replace dem_flag=1 if inlist(dgns_`i'_cd, "G300", "G301", "G308", "G309", "G3101", "G3109") | inlist(dgns_`i'_cd, "G310", "G3183", "F0150", "F0151", "I679", "G3184", "F067") | inlist(dgns_`i'_cd, "F0280", "F0281", "G311") | inlist(substr(dgns_`i'_cd,1,3),"F03") 
+	replace dem_risk_flag=1 if inlist(dgns_`i'_cd, "G300", "G301", "G308", "G309", "G3101", "G3109") | inlist(dgns_`i'_cd, "G310", "G3183", "F0150", "F0151", "I679", "G3184", "F067") | inlist(dgns_`i'_cd, "E0800", "E0801", "E0810", "E0811", "E08618", "E08620", "E08621", "E08622") | inlist(dgns_`i'_cd, "E08628", "E08630", "E08638", "E08641", "E08649", "E0865", "E0869", "E088") | inlist(dgns_`i'_cd, "E089", "E0900", "E0901", "E0910", "E0911", "E09618", "E09620", "E09621") | inlist(dgns_`i'_cd, "E09622", "E09628", "E09630", "E09638", "E09641", "E09649", "E0965", "E0969") | inlist(dgns_`i'_cd, "E098", "E099", "E1010", "E1011", "E10618", "E10620", "E10621", "E10622") | inlist(dgns_`i'_cd, "E10628", "E10630", "E10638", "E10641", "E10649", "E1065", "E1069", "E108") | inlist(dgns_`i'_cd, "E109", "E1100", "E1101", "E11618", "E11620", "E11621", "E11622", "E11628") | inlist(dgns_`i'_cd, "E11630", "E11638", "E11641", "E11649", "E1165", "E1169", "E118", "E119" ) | inlist(dgns_`i'_cd, "E1300", "E1301", "E1310", "E1311", "E13618", "E13620", "E13621", "E13622" ) | inlist(dgns_`i'_cd, "E13628", "E13630", "E13638", "E13641", "E13649", "E1365", "E1369", "E138" ) | inlist(dgns_`i'_cd, "E139", "R81", "H35031", "H35032", "H35033", "H35039", "I10", "I110" ) | inlist(dgns_`i'_cd, "I119", "I120", "I129", "I130", "I1310", "I1311", "I132", "I150") | inlist(dgns_`i'_cd, "I151", "I152", "I158", "I159", "I160", "I161", "I169", "I1A0") | inlist(dgns_`i'_cd, "N262", "E660", "E6601", "E6609", "E661", "E662", "E663", "E668") | inlist(dgns_`i'_cd, "E669", "F204", "F313", "F314", "F315", "F32X", "F321", "F322") | inlist(dgns_`i'_cd, "F323", "F324", "F325", "F328", "F332", "F333", "F334", "F338") | inlist(dgns_`i'_cd, "F339", "F341", "F412", "F418", "F200", "F201", "F202", "F203") | inlist(dgns_`i'_cd, "F205", "F208", "F209", "F22", "F23", "F24", "F250" ) | inlist(dgns_`i'_cd, "F251", "F258", "F259", "F28", "F29", "F302", "F312", "F315") | inlist(dgns_`i'_cd, "F17", "z72", "S01", "S020", "S021X", "S023X", "S028X", "S029X")  | inlist(dgns_`i'_cd, "S040X", "S06X", "S07X", "S098X", "S0990", "Q90", "z9181" ) | inlist(dgns_`i'_cd, "R262", "R296", "R269", "R2689", "F05", "G47")
+}
+
+gen snf_lessthan100=ss_ls_snf_ind_cd=="N" & los_day_cnt<100
+
+keep bene_id alzeimers_flag dem_flag dem_risk_flag snf_lessthan100
+
+save "${intpath}/medpar.dta",replace
+
+//merge all data 
+use "${intpath}/carrier.dta",clear 
+append using "${intpath}/hospice.dta"
+append using "${intpath}/outpt.dta"
+append using "${intpath}/medpar.dta"
+
+//drop duplicates 
+sort bene_id
+foreach x in alzeimers_flag dem_flag dem_risk_flag {
+	by bene_id: egen a=max(`x')
+	replace `x'=a
+	drop a 
+}
+
+duplicates drop
+
+merge m:1 bene_id using "${datapath}\mbsf_abcd\mbsf_claims.dta", nogen
+
+tab alzeimers_flag
+tab dem_flag
+tab dem_risk_flag
+
+//recode all dementia flags so 1 - no dementia; 0 - has dementia 
+
+recode alzeimers_flag(0=1)(1=0)
+label define alzeimers_flag 0 "has dementia" 1 "no dementia"
+label values alzeimers_flag alzeimers_flag 
+
+recode dem_flag (0=1)(1=0)
+label define dem_flag 0 "has dementia" 1 "no dementia" 
+label values dem_flag dem_flag 
+
+recode dem_risk_flag (0=1)(1=0)
+label define dem_risk_flag 0 "has dementia" 1 "no dementia" 
+label values dem_risk_flag dem_risk_flag 
+
+duplicates report bene_id
+duplicates drop bene_id,force
+
+save "${intpath}/pre_partd.dta",replace 
+
+/*
+//part d 
+use "${datapath}\pde\pde_claims.dta", clear 
+rename *,lower
+keep bene_id prod_srvc_id
+save "${intpath}/partd.dta",replace
+
+*/
+
+
+H="create dementia flags (bynum method - apply)"
+//specific code refer to Bynum code folder 
+//final data product 
+use "${datapath}/bene_ADRD_all_sources_2019", clear
+
+H="create drug name to merge "
+import excel "\\mssm2\mssm2$\wangy63\Personal\DesktopFiles\PDE Codes_Litke NDC clean.XLSX", sheet("PDE Codes_Litke NDC clean") firstrow allstring clear
+
+foreach x of varlist * {
+	preserve 
+	keep `x'
+	rename `x' prod_srvc_id
+	gen drug_name="`x'"
+	save "${intpath}/`x'",replace
+	restore
+}
+
+clear 
+
+foreach y in CPZ TriHyd NorHyd PCPZ Flup AmiHyd1 AmiHyd2 ProHyd Citalo Ket Fluox FluvMal Lamot Preg {
+	append using "${intpath}/`y'"
+}
+
+drop if prod_srvc_id==""
+
+rename prod_srvc_id ndc 
+
+duplicates drop ndc drug_name, force
+
+save "${intpath}/drug_name.dta",replace
+
+H="merge drug name to part d "
+use "${intpath}/partd.dta", clear 
+
+gen ndc=substr(prod_srvc_id, 1, strlen(prod_srvc_id)-2)
+keep bene_id ndc
+
+joinby ndc using "${intpath}/drug_name.dta"
+
+duplicates report bene_id drug_name
+return list 
+duplicates drop bene_id drug_name, force 
+
+duplicates drop bene_id,force
+
+save "${intpath}/drug_name_complete.dta", replace 
+
+
+use "${intpath}/pre_partd.dta", clear 
+merge m:1 bene_id using "${intpath}/drug_name_complete.dta", nogen
+
+//create analytic groups 
+
+tab drug_name
+
+gen drug_name_regroup = 6 if drug_name == "Fluox" | drug_name== "ProHyd"
+replace drug_name_regroup = 1 if drug_name == "AmiHyd1"
+replace drug_name_regroup = 2 if drug_name == "FluvMal"
+replace drug_name_regroup = 3 if drug_name == "CPZ"
+replace drug_name_regroup = 4 if drug_name == "Lamot"
+replace drug_name_regroup = 5 if drug_name == "NorHyd"
+
+label define drug_name_regroup 1 "AmiHyd1" 2 "FluvMal" 3 "CPZ" 4 "Lamot" 5 "NorHyd" 6 "Others (Fluox + ProHyd)" 
+label values drug_name_regroup drug_name_regroup
+
+tab drug_name_regroup
+
+anova dem_flag drug_name_regroup
+
+logistic dem_flag i.drug_name_regroup,or
+
+save "${intpath}/working_data.dta", replace 
+
+
+
+
+H="descriptive stats"
+log using "J:\Geriatrics\Litke_CMS\2019\Output\in_progress\descriptive stats.smcl",replace 
+
+use "${intpath}/carrier.dta",clear 
+append using "${intpath}/hospice.dta"
+append using "${intpath}/outpt.dta"
+append using "${intpath}/medpar.dta"
+
+tab alzeimers_flag
+tab dem_flag
+tab dem_risk_flag
+
+tab drug_name
+
+tab drug_name_regroup
+
+anova dem_flag drug_name_regroup
+
+logistic dem_flag i.drug_name_regroup,or
+
+log close 
+
+translate "J:\Geriatrics\Litke_CMS\2019\Output\in_progress\descriptive stats.smcl" "J:\Geriatrics\Litke_CMS\2019\Output\in_progress\descriptive stats.pdf",replace
+
+H="get covariates"
+//append and merge all medicare data
+//carrier
+use "${datapath}/carrier_claims/carrier_claims.dta", clear 
+	rename *,lower
+	keep bene_id icd_dgns_cd*
+	gen hypertension=0
+	gen diabetes=0
+	gen stroke=0
+	gen heart=0
+	gen depressive=0
+	gen tbi=0
+	gen smoking=0
+	gen psychosis2=0
+	gen rheumatoid_arthritis=0
+	
+		forvalues i=1/12 {
+			replace hypertension=1 if inlist(substr(icd_dgns_cd`i',1,3),"I10") 
+			replace diabetes=1 if inlist(substr(icd_dgns_cd`i',1,3),"E10") | inlist(substr(icd_dgns_cd`i',1,3),"E11") 
+			replace stroke=1 if inlist(substr(icd_dgns_cd`i',1,3),"I63") 
+			replace heart=1 if inlist(substr(icd_dgns_cd`i',1,3),"I25") | inlist(substr(icd_dgns_cd`i',1,3),"I11") 
+			replace depressive=1 if inlist(substr(icd_dgns_cd`i',1,3),"F32") | inlist(substr(icd_dgns_cd`i',1,3),"F33") 
+			replace tbi=1 if inlist(substr(icd_dgns_cd`i',1,3),"S02") | inlist(substr(icd_dgns_cd`i',1,3),"S06") | inlist(substr(icd_dgns_cd`i',1,3),"S07") 
+			replace smoking=1 if inlist(substr(icd_dgns_cd`i',1,3),"F17") | icd_dgns_cd`i'=="Z77"
+			replace psychosis2=1 if inlist(substr(icd_dgns_cd`i',1,3),"F20") | inlist(substr(icd_dgns_cd`i',1,3),"F21") | inlist(substr(icd_dgns_cd`i',1,3),"F22") | inlist(substr(icd_dgns_cd`i',1,3),"F23") | inlist(substr(icd_dgns_cd`i',1,3),"F24")
+			replace psychosis2=1 if inlist(substr(icd_dgns_cd`i',1,3),"F25") | inlist(substr(icd_dgns_cd`i',1,3),"F26") | inlist(substr(icd_dgns_cd`i',1,3),"F27") | inlist(substr(icd_dgns_cd`i',1,3),"F28") | inlist(substr(icd_dgns_cd`i',1,3),"F29") | inlist(substr(icd_dgns_cd`i',1,3),"F30") 
+			replace rheumatoid_arthritis=1 if inlist(substr(icd_dgns_cd`i',1,3),"M05") | inlist(substr(icd_dgns_cd`i',1,3),"M06") & !inlist(substr(icd_dgns_cd`i',1,3),"M061")
+		}
+
+keep bene_id hypertension diabetes stroke heart depressive tbi smoking psychosis2 rheumatoid_arthritis
+save "${intpath}/comorbidities_carrier.dta",replace
+
+
+//hospice, outpatient 
+foreach x in hospice outpt {
+	use "${datapath}/`x'_claims/`x'_claims.dta", clear 
+	
+	rename *,lower
+	keep bene_id icd_dgns_cd*
+	gen hypertension=0
+	gen diabetes=0
+	gen stroke=0
+	gen heart=0
+	gen depressive=0
+	gen tbi=0
+	gen smoking=0
+	gen psychosis2=0
+	gen rheumatoid_arthritis=0
+
+		forvalues i=1/25 {
+			replace hypertension=1 if inlist(substr(icd_dgns_cd`i',1,3),"I10") 
+			replace diabetes=1 if inlist(substr(icd_dgns_cd`i',1,3),"E10") | inlist(substr(icd_dgns_cd`i',1,3),"E11") 
+			replace stroke=1 if inlist(substr(icd_dgns_cd`i',1,3),"I63") 
+			replace heart=1 if inlist(substr(icd_dgns_cd`i',1,3),"I25") | inlist(substr(icd_dgns_cd`i',1,3),"I11") 
+			replace depressive=1 if inlist(substr(icd_dgns_cd`i',1,3),"F32") | inlist(substr(icd_dgns_cd`i',1,3),"F33") 
+			replace tbi=1 if inlist(substr(icd_dgns_cd`i',1,3),"S02") | inlist(substr(icd_dgns_cd`i',1,3),"S06") | inlist(substr(icd_dgns_cd`i',1,3),"S07") 
+			replace smoking=1 if inlist(substr(icd_dgns_cd`i',1,3),"F17") | inlist(substr(icd_dgns_cd`i',1,3),"Z77") 
+			replace psychosis2=1 if inlist(substr(icd_dgns_cd`i',1,3),"F20") | inlist(substr(icd_dgns_cd`i',1,3),"F21") | inlist(substr(icd_dgns_cd`i',1,3),"F22")| inlist(substr(icd_dgns_cd`i',1,3),"F23") | inlist(substr(icd_dgns_cd`i',1,3),"F24") | inlist(substr(icd_dgns_cd`i',1,3),"F25")
+			replace psychosis2=1 if	inlist(substr(icd_dgns_cd`i',1,3),"F26") | inlist(substr(icd_dgns_cd`i',1,3),"F27") | inlist(substr(icd_dgns_cd`i',1,3),"F28") | inlist(substr(icd_dgns_cd`i',1,3),"F29") | inlist(substr(icd_dgns_cd`i',1,3),"F30") 
+			replace rheumatoid_arthritis=1 if inlist(substr(icd_dgns_cd`i',1,3),"M05") | inlist(substr(icd_dgns_cd`i',1,3),"M06") & !inlist(substr(icd_dgns_cd`i',1,3),"M061")
+		}
+
+keep bene_id hypertension diabetes stroke heart depressive tbi smoking psychosis2 rheumatoid_arthritis
+save "${intpath}/comorbidities_`x'.dta",replace
+}
+
+
+//medpar 
+use "${datapath}\medpar\medpar_claims.dta", clear 
+rename *,lower
+keep bene_id dgns_*_cd
+drop dgns_e_* dgns_poa_cd
+
+gen hypertension=0
+gen diabetes=0
+gen stroke=0
+gen heart=0
+gen depressive=0
+gen tbi=0
+gen smoking=0
+gen psychosis2=0
+gen rheumatoid_arthritis=0
+
+forvalues i=1/25 {
+	replace hypertension=1 if inlist(substr(dgns_`i'_cd,1,3),"I10") 
+			replace diabetes=1 if inlist(substr(dgns_`i' _cd,1,3),"E10") | inlist(substr(dgns_`i'_cd,1,3),"E11") 
+			replace stroke=1 if inlist(substr(dgns_`i'_cd,1,3),"I63") 
+			replace heart=1 if inlist(substr(dgns_`i'_cd,1,3),"I25") | inlist(substr(dgns_`i'_cd,1,3),"I11") 
+			replace depressive=1 if inlist(substr(dgns_`i'_cd,1,3),"F32") | inlist(substr(dgns_`i'_cd,1,3),"F33") 
+			replace tbi=1 if inlist(substr(dgns_`i'_cd,1,3),"S02") | inlist(substr(dgns_`i'_cd,1,3),"S06") | inlist(substr(dgns_`i'_cd,1,3),"S07") 
+			replace smoking=1 if inlist(substr(dgns_`i'_cd,1,3),"F17") | inlist(substr(dgns_`i'_cd,1,3),"Z77")
+			replace psychosis2=1 if inlist(substr(dgns_`i'_cd,1,3),"F20") | inlist(substr(dgns_`i'_cd,1,3),"F21") | inlist(substr(dgns_`i'_cd,1,3),"F22")| inlist(substr(dgns_`i'_cd,1,3),"F23") | inlist(substr(dgns_`i'_cd,1,3),"F24") | inlist(substr(dgns_`i'_cd,1,3),"F25")
+			replace psychosis2=1 if	inlist(substr(dgns_`i'_cd,1,3),"F26") | inlist(substr(dgns_`i'_cd,1,3),"F27") | inlist(substr(dgns_`i'_cd,1,3),"F28") | inlist(substr(dgns_`i'_cd,1,3),"F29") | inlist(substr(dgns_`i'_cd,1,3),"F30") 	
+             replace rheumatoid_arthritis=1 if inlist(substr(dgns_`i'_cd,1,3),"M05") | inlist(substr(dgns_`i'_cd,1,3),"M06") & !inlist(substr(dgns_`i'_cd,1,3),"M061")
+}
+
+keep bene_id hypertension diabetes stroke heart depressive tbi smoking psychosis2 rheumatoid_arthritis
+
+save "${intpath}/comorbidities_medpar.dta",replace
+
+//merge all data 
+use "${intpath}/comorbidities_carrier.dta",clear 
+append using "${intpath}/comorbidities_hospice.dta"
+append using "${intpath}/comorbidities_outpt.dta"
+append using "${intpath}/comorbidities_medpar.dta"
+
+//drop duplicates 
+sort bene_id
+foreach x in hypertension diabetes stroke heart depressive tbi smoking psychosis2 rheumatoid_arthritis {
+	by bene_id: egen a=max(`x')
+	replace `x'=a
+	drop a 
+}
+
+duplicates drop
+
+save "${intpath}/covariates.dta",replace 
+
+
+
+
+
+H="table 1 & table 2 "
+log using "J:\Geriatrics\Litke_CMS\2019\Output\in_progress\progress report tables0328.smcl",replace 
+
+use "${intpath}/covariates.dta",clear 
+
+merge m:1 bene_id using "${intpath}/working_data.dta", nogen
+
+//recode comorbidities
+tab hypertension
+tab diabetes
+tab stroke
+tab heart
+tab depressive
+tab tbi
+tab smoking
+tab psychosis2
+tab rheumatoid_arthritis
+
+recode hypertension diabetes stroke heart depressive tbi smoking psychosis2 rheumatoid_arthritis (.=0)
+
+//recode tri race 
+tab rti_race_cd
+gen race_recode=rti_race_cd
+destring race_recode,replace
+recode race_recode (0=4)(1=1)(2=2)(3=4)(4=4)(5=3)(6=4)
+label define race_recode 1 "non-Hispanic White" 2 "non-Hispanic Black" 3 "Hispanic" 4 "Others"
+label values race_recode race_recode
+
+tab race_recode
+
+//recode dem flags 
+recode alzeimers_flag (.=0)
+recode dem_flag (.=0)
+recode dem_risk_flag (.=0)
+
+tab alzeimers_flag
+tab dem_flag
+tab dem_risk_flag
+
+destring sex_ident_cd,replace
+
+tab drug_name_regroup
+
+gen everdrug=drug_name_regroup!=.
+tab everdrug
+
+//exclude snf stay less than 100 days 
+tab snf_lessthan100
+drop if snf_lessthan100==1
+
+
+//sample size 
+sum age_at_end_ref_yr race_recode sex_ident_cd hypertension diabetes stroke heart depressive tbi smoking psychosis2 rheumatoid_arthritis
+
+//table 1 
+ttest age_at_end_ref_yr, by(everdrug)
+tabulate race_recode everdrug, chi2 col
+tabulate sex_ident_cd everdrug, chi2 col
+tabulate dem_flag everdrug,chi2 col
+
+tabulate hypertension everdrug, chi2 col
+tabulate diabetes everdrug, chi2 col
+tabulate stroke everdrug, chi2 col
+tabulate heart everdrug, chi2 col
+tabulate depressive everdrug, chi2 col
+tabulate tbi everdrug, chi2 col
+tabulate smoking everdrug, chi2 col
+tabulate psychosis2 everdrug, chi2 col
+tabulate rheumatoid_arthritis everdrug, chi2 row
+
+//create dummy categories for drug 
+gen AmiHyd1=drug_name_regroup==1
+gen FluvMal=drug_name_regroup==2
+gen CPZ=drug_name_regroup==3
+gen Lamot=drug_name_regroup==4
+gen NorHyd=drug_name_regroup==5
+gen Others_Fluox_ProHyd=drug_name_regroup==6
+
+//table 2 
+
+logistic dem_flag age_at_end_ref_yr i.race_recode i.sex_ident_cd i.everdrug i.hypertension i.diabetes i.stroke i.heart i.depressive i.tbi i.smoking i.psychosis2,or 
+
+logistic dem_flag age_at_end_ref_yr i.race_recode i.sex_ident_cd AmiHyd1 FluvMal CPZ Lamot NorHyd Others_Fluox_ProHyd i.hypertension i.diabetes i.stroke i.heart i.depressive i.tbi i.smoking i.psychosis2 if everdrug==1,or
+
+//see if people have rheumatoid_arthritis has a higher risk of dementia 
+tabulate rheumatoid_arthritis dem_flag, chi2 row
+
+logistic dem_flag age_at_end_ref_yr i.race_recode i.sex_ident_cd i.everdrug i.hypertension i.diabetes i.stroke i.heart i.depressive i.tbi i.smoking i.psychosis2 i.rheumatoid_arthritis,or 
+
+logistic dem_flag age_at_end_ref_yr i.race_recode i.sex_ident_cd AmiHyd1 FluvMal CPZ Lamot NorHyd Others_Fluox_ProHyd i.hypertension i.diabetes i.stroke i.heart i.depressive i.tbi i.smoking i.psychosis2 i.rheumatoid_arthritis if everdrug==1,or
+
+
+save "${intpath}/march2024.dta",replace 
+
+translate "J:\Geriatrics\Litke_CMS\2019\Output\in_progress\progress report tables0328.smcl" "J:\Geriatrics\Litke_CMS\2019\Output\in_progress\progress report tables0328.pdf"
+
+log close 
+
+
+H="progress 0415"
+log using "J:\Geriatrics\Litke_CMS\2019\Output\in_progress\save progress 0415.smcl",replace 
+
+use "${intpath}/covariates.dta",clear 
+
+merge m:1 bene_id using "${intpath}/working_data.dta", nogen
+
+
+tab rheumatoid_arthritis
+
+recode hypertension diabetes stroke heart depressive tbi smoking psychosis2 (.=0)
+
+//recode tri race 
+tab rti_race_cd
+gen race_recode=rti_race_cd
+destring race_recode,replace
+recode race_recode (0=4)(1=1)(2=2)(3=4)(4=4)(5=3)(6=4)
+label define race_recode 1 "non-Hispanic White" 2 "non-Hispanic Black" 3 "Hispanic" 4 "Others"
+label values race_recode race_recode
+
+tab race_recode
+
+//recode dem flags 
+recode alzeimers_flag (.=1)
+recode dem_flag (.=1)
+recode dem_risk_flag (.=1)
+
+tab alzeimers_flag
+tab dem_flag
+tab dem_risk_flag
+
+destring sex_ident_cd,replace
+
+tab drug_name_regroup
+
+gen everdrug=drug_name_regroup!=.
+tab everdrug
+
+//exclude snf stay less than 100 days 
+tab snf_lessthan100
+drop if snf_lessthan100==1
+
+
+//sample size 
+sum rheumatoid_arthritis
+
+//table 1 
+tabulate rheumatoid_arthritis everdrug, chi2 row
+
+//create dummy categories for drug 
+gen AmiHyd1=drug_name_regroup==1
+gen FluvMal=drug_name_regroup==2
+gen CPZ=drug_name_regroup==3
+gen Lamot=drug_name_regroup==4
+gen NorHyd=drug_name_regroup==5
+gen Others_Fluox_ProHyd=drug_name_regroup==6
+
+//see if people have rheumatoid_arthritis has a higher risk of dementia 
+tabulate rheumatoid_arthritis dem_flag, chi2 row
+
+logistic dem_flag age_at_end_ref_yr i.race_recode i.sex_ident_cd i.everdrug i.hypertension i.diabetes i.stroke i.heart i.depressive i.tbi i.smoking i.psychosis2,or 
+
+logistic dem_flag age_at_end_ref_yr i.race_recode i.sex_ident_cd AmiHyd1 FluvMal CPZ Lamot NorHyd Others_Fluox_ProHyd i.hypertension i.diabetes i.stroke i.heart i.depressive i.tbi i.smoking i.psychosis2 i.rheumatoid_arthritis if everdrug==1,or
+
+
+save "${intpath}/march2024.dta",replace 
+
+translate "J:\Geriatrics\Litke_CMS\2019\Output\in_progress\save progress 0415.smcl" "J:\Geriatrics\Litke_CMS\2019\Output\in_progress\save progress 0415.pdf"
+
+log close 
+
+
+H="table shells "
+
+use "${intpath}/covariates.dta",clear 
+
+merge m:1 bene_id using "${intpath}/working_data.dta", nogen
+
+//recode comorbidities
+ 
+recode hypertension diabetes stroke heart depressive tbi smoking psychosis2 rheumatoid_arthritis (.=0)
+
+//recode tri race 
+tab rti_race_cd
+gen race_recode=rti_race_cd
+destring race_recode,replace
+recode race_recode (0=4)(1=1)(2=2)(3=4)(4=4)(5=3)(6=4)
+label define race_recode 1 "non-Hispanic White" 2 "non-Hispanic Black" 3 "Hispanic" 4 "Others"
+label values race_recode race_recode
+
+tab race_recode
+
+//recode dem flags 
+recode alzeimers_flag (.=1)
+recode dem_flag (.=1)
+recode dem_risk_flag (.=1)
+
+tab alzeimers_flag
+tab dem_flag
+tab dem_risk_flag
+
+destring sex_ident_cd,replace
+
+tab drug_name_regroup
+
+gen everdrug=drug_name_regroup!=.
+tab everdrug
+
+//exclude snf stay less than 100 days 
+tab snf_lessthan100
+drop if snf_lessthan100==1
+
+
+//sample size 
+sum age_at_end_ref_yr race_recode sex_ident_cd hypertension diabetes stroke heart depressive tbi smoking psychosis2 rheumatoid_arthritis
+
+tabulate stroke everdrug, chi2 col
+
+//create dummy categories for drug 
+gen AmiHyd1=drug_name_regroup==1
+gen FluvMal=drug_name_regroup==2
+gen CPZ=drug_name_regroup==3
+gen Lamot=drug_name_regroup==4
+gen NorHyd=drug_name_regroup==5
+gen Others_Fluox_ProHyd=drug_name_regroup==6
+
+log using "J:\Geriatrics\Litke_CMS\2019\Output\in_progress\table shells all models.smcl",replace 
+
+//table 1 
+sum age 
+tab race_recode 
+tab sex_ident_cd
+tab dem_flag
+tab hypertension 
+tab diabetes 
+tab stroke 
+tab heart 
+tab depressive 
+tab tbi 
+tab smoking 
+tab psychosis2 
+tab rheumatoid_arthritis
+
+ttest age_at_end_ref_yr, by(everdrug)
+tab race_recode everdrug,chi2
+tab sex_ident_cd everdrug,chi2
+tab dem_flag everdrug,chi2 
+tab hypertension everdrug,chi2 
+tab diabetes everdrug,chi2 
+tab stroke everdrug,chi2 
+tab heart everdrug,chi2 
+tab depressive everdrug,chi2 
+tab tbi everdrug,chi2 
+tab smoking everdrug,chi2 
+tab psychosis2 everdrug,chi2 
+tab rheumatoid_arthritis everdrug,chi2 
+
+tab dem_flag AmiHyd1, chi2 col
+tab dem_flag FluvMal, chi2 col
+tab dem_flag CPZ, chi2 col
+tab dem_flag Lamot, chi2 col
+tab dem_flag NorHyd, chi2 col
+tab dem_flag Others_Fluox_ProHyd, chi2 col
+
+//table 2 - see risk of people having dementia when taking drugs 
+//model 1 only drugs 
+logistic dem_flag i.everdrug,or
+logistic dem_flag i.AmiHyd1,or
+logistic dem_flag i.FluvMal,or
+logistic dem_flag i.CPZ,or
+logistic dem_flag i.Lamot,or
+logistic dem_flag i.NorHyd,or
+logistic dem_flag i.Others_Fluox_ProHyd,or
+
+//model 2 drug + demographics 
+logistic dem_flag i.everdrug age_at_end_ref_yr i.race_recode i.sex_ident_cd,or
+logistic dem_flag i.AmiHyd1 age_at_end_ref_yr i.race_recode i.sex_ident_cd,or
+logistic dem_flag i.FluvMal age_at_end_ref_yr i.race_recode i.sex_ident_cd,or
+logistic dem_flag i.CPZ age_at_end_ref_yr i.race_recode i.sex_ident_cd,or
+logistic dem_flag i.Lamot age_at_end_ref_yr i.race_recode i.sex_ident_cd,or
+logistic dem_flag i.NorHyd age_at_end_ref_yr i.race_recode i.sex_ident_cd,or
+logistic dem_flag i.Others_Fluox_ProHyd age_at_end_ref_yr i.race_recode i.sex_ident_cd,or
+
+//model 3 drug + demographics + all comorbidities (no RA) 
+logistic dem_flag i.everdrug age_at_end_ref_yr i.race_recode i.sex_ident_cd i.stroke i.hypertension i.diabetes i.heart i.depressive i.tbi i.smoking i.psychosis2,or
+logistic dem_flag i.AmiHyd1 age_at_end_ref_yr i.race_recode i.sex_ident_cd i.stroke i.hypertension i.diabetes i.heart i.depressive i.tbi i.smoking i.psychosis2,or
+logistic dem_flag i.FluvMal age_at_end_ref_yr i.race_recode i.sex_ident_cd i.stroke i.hypertension i.diabetes i.heart i.depressive i.tbi i.smoking i.psychosis2,or
+logistic dem_flag i.CPZ age_at_end_ref_yr i.race_recode i.sex_ident_cd i.stroke i.hypertension i.diabetes i.heart i.depressive i.tbi i.smoking i.psychosis2,or
+logistic dem_flag i.Lamot age_at_end_ref_yr i.race_recode i.sex_ident_cd i.stroke i.hypertension i.diabetes i.heart i.depressive i.tbi i.smoking i.psychosis2,or
+logistic dem_flag i.NorHyd age_at_end_ref_yr i.race_recode i.sex_ident_cd i.stroke i.hypertension i.diabetes i.heart i.depressive i.tbi i.smoking i.psychosis2,or
+logistic dem_flag i.Others_Fluox_ProHyd age_at_end_ref_yr i.race_recode i.sex_ident_cd i.stroke i.hypertension i.diabetes i.heart i.depressive i.tbi i.smoking i.psychosis2,or
+
+//table 4 - drug + demographics + all comorbidities with RA 
+logistic dem_flag i.everdrug age_at_end_ref_yr i.race_recode i.sex_ident_cd i.stroke i.hypertension i.diabetes i.heart i.depressive i.tbi i.smoking i.psychosis2 i.rheumatoid_arthritis,or
+logistic dem_flag i.AmiHyd1 age_at_end_ref_yr i.race_recode i.sex_ident_cd i.stroke i.hypertension i.diabetes i.heart i.depressive i.tbi i.smoking i.psychosis2 i.rheumatoid_arthritis,or
+logistic dem_flag i.FluvMal age_at_end_ref_yr i.race_recode i.sex_ident_cd i.stroke i.hypertension i.diabetes i.heart i.depressive i.tbi i.smoking i.psychosis2 i.rheumatoid_arthritis,or
+logistic dem_flag i.CPZ age_at_end_ref_yr i.race_recode i.sex_ident_cd i.stroke i.hypertension i.diabetes i.heart i.depressive i.tbi i.smoking i.psychosis2 i.rheumatoid_arthritis,or
+logistic dem_flag i.Lamot age_at_end_ref_yr i.race_recode i.sex_ident_cd i.stroke i.hypertension i.diabetes i.heart i.depressive i.tbi i.smoking i.psychosis2 i.rheumatoid_arthritis,or
+logistic dem_flag i.NorHyd age_at_end_ref_yr i.race_recode i.sex_ident_cd i.stroke i.hypertension i.diabetes i.heart i.depressive i.tbi i.smoking i.psychosis2 i.rheumatoid_arthritis,or
+logistic dem_flag i.Others_Fluox_ProHyd age_at_end_ref_yr i.race_recode i.sex_ident_cd i.stroke i.hypertension i.diabetes i.heart i.depressive i.tbi i.smoking i.psychosis2 i.rheumatoid_arthritis,or
+
+
+//Table 3 - see if people have stroke has a higher risk of dementia 
+//model 1 only drugs 
+logistic stroke i.everdrug,or
+logistic stroke i.AmiHyd1,or
+logistic stroke i.FluvMal,or
+logistic stroke i.CPZ,or
+logistic stroke i.Lamot,or
+logistic stroke i.NorHyd,or
+logistic stroke i.Others_Fluox_ProHyd,or
+
+//model 2 drug + demographics 
+logistic stroke i.everdrug age_at_end_ref_yr i.race_recode i.sex_ident_cd,or
+logistic stroke i.AmiHyd1 age_at_end_ref_yr i.race_recode i.sex_ident_cd,or
+logistic stroke i.FluvMal age_at_end_ref_yr i.race_recode i.sex_ident_cd,or
+logistic stroke i.CPZ age_at_end_ref_yr i.race_recode i.sex_ident_cd,or
+logistic stroke i.Lamot age_at_end_ref_yr i.race_recode i.sex_ident_cd,or
+logistic stroke i.NorHyd age_at_end_ref_yr i.race_recode i.sex_ident_cd,or
+logistic stroke i.Others_Fluox_ProHyd age_at_end_ref_yr i.race_recode i.sex_ident_cd,or
+
+//model 3 drug + demographics + comorbidities 
+logistic stroke i.everdrug age_at_end_ref_yr i.race_recode i.sex_ident_cd i.hypertension i.diabetes i.smoking,or
+logistic stroke i.AmiHyd1 age_at_end_ref_yr i.race_recode i.sex_ident_cd i.hypertension i.diabetes i.smoking,or
+logistic stroke i.FluvMal age_at_end_ref_yr i.race_recode i.sex_ident_cd i.hypertension i.diabetes i.smoking,or
+logistic stroke i.CPZ age_at_end_ref_yr i.race_recode i.sex_ident_cd i.hypertension i.diabetes i.smoking,or
+logistic stroke i.Lamot age_at_end_ref_yr i.race_recode i.sex_ident_cd i.hypertension i.diabetes i.smoking,or
+logistic stroke i.NorHyd age_at_end_ref_yr i.race_recode i.sex_ident_cd i.hypertension i.diabetes i.smoking,or
+logistic stroke i.Others_Fluox_ProHyd age_at_end_ref_yr i.race_recode i.sex_ident_cd i.hypertension i.diabetes i.smoking,or
+
+
+translate "J:\Geriatrics\Litke_CMS\2019\Output\in_progress\table shells all models.smcl" "J:\Geriatrics\Litke_CMS\2019\Output\in_progress\table shells all models.pdf"
+
+log close 
+
+
+
+
+H="table shells (Bynum method ADRD) "
+use "${datapath}/bene_ADRD_all_sources_2019", clear
+rename*,lower
+
+
+merge m:1 bene_id using "${datapath}\mbsf_abcd\mbsf_claims.dta", nogen
+
+tab adrd_dx,m
+
+duplicates report bene_id
+duplicates drop bene_id,force
+
+save "${intpath}/bynum_adrd.dta",replace 
+
+
+H="Avi's Table4"
+
+use "${intpath}/covariates.dta",clear 
+
+merge m:1 bene_id using "${intpath}/working_data.dta", nogen
+
+//recode comorbidities
+ 
+recode hypertension diabetes stroke heart depressive tbi smoking psychosis2 rheumatoid_arthritis (.=0)
+
+//recode tri race 
+tab rti_race_cd
+gen race_recode=rti_race_cd
+destring race_recode,replace
+recode race_recode (0=4)(1=1)(2=2)(3=4)(4=4)(5=3)(6=4)
+label define race_recode 1 "non-Hispanic White" 2 "non-Hispanic Black" 3 "Hispanic" 4 "Others"
+label values race_recode race_recode
+
+tab race_recode
+
+//recode dem flags 
+recode alzeimers_flag (.=1)
+recode dem_flag (.=1)
+recode dem_risk_flag (.=1)
+
+tab alzeimers_flag
+tab dem_flag
+tab dem_risk_flag
+
+destring sex_ident_cd,replace
+
+tab drug_name_regroup
+
+gen everdrug=drug_name_regroup!=.
+tab everdrug
+
+//exclude snf stay less than 100 days 
+tab snf_lessthan100
+drop if snf_lessthan100==1
+
+//in subset of RA cases 
+keep if rheumatoid_arthritis==1
+
+
+//sample size 
+sum age_at_end_ref_yr race_recode sex_ident_cd hypertension diabetes stroke heart depressive tbi smoking psychosis2 rheumatoid_arthritis
+
+tabulate stroke everdrug, chi2 col
+
+//create dummy categories for drug 
+gen AmiHyd1=drug_name_regroup==1
+gen FluvMal=drug_name_regroup==2
+gen CPZ=drug_name_regroup==3
+gen Lamot=drug_name_regroup==4
+gen NorHyd=drug_name_regroup==5
+gen Others_Fluox_ProHyd=drug_name_regroup==6
+
+log using "J:\Geriatrics\Litke_CMS\2019\Output\in_progress\Avi recommended table4.smcl",replace 
+
+//table 4
+//model 1 only drugs 
+logistic dem_flag i.everdrug,or
+logistic dem_flag i.AmiHyd1,or
+logistic dem_flag i.FluvMal,or
+logistic dem_flag i.CPZ,or
+logistic dem_flag i.Lamot,or
+logistic dem_flag i.NorHyd,or
+logistic dem_flag i.Others_Fluox_ProHyd,or
+
+//model 2 drug + demographics 
+logistic dem_flag i.everdrug age_at_end_ref_yr i.race_recode i.sex_ident_cd,or
+logistic dem_flag i.AmiHyd1 age_at_end_ref_yr i.race_recode i.sex_ident_cd,or
+logistic dem_flag i.FluvMal age_at_end_ref_yr i.race_recode i.sex_ident_cd,or
+logistic dem_flag i.CPZ age_at_end_ref_yr i.race_recode i.sex_ident_cd,or
+logistic dem_flag i.Lamot age_at_end_ref_yr i.race_recode i.sex_ident_cd,or
+logistic dem_flag i.NorHyd age_at_end_ref_yr i.race_recode i.sex_ident_cd,or
+logistic dem_flag i.Others_Fluox_ProHyd age_at_end_ref_yr i.race_recode i.sex_ident_cd,or
+
+//model 3 drug + demographics + all comorbidities (no RA) 
+logistic dem_flag i.everdrug age_at_end_ref_yr i.race_recode i.sex_ident_cd i.stroke i.hypertension i.diabetes i.heart i.depressive i.tbi i.smoking i.psychosis2,or
+logistic dem_flag i.AmiHyd1 age_at_end_ref_yr i.race_recode i.sex_ident_cd i.stroke i.hypertension i.diabetes i.heart i.depressive i.tbi i.smoking i.psychosis2,or
+logistic dem_flag i.FluvMal age_at_end_ref_yr i.race_recode i.sex_ident_cd i.stroke i.hypertension i.diabetes i.heart i.depressive i.tbi i.smoking i.psychosis2,or
+logistic dem_flag i.CPZ age_at_end_ref_yr i.race_recode i.sex_ident_cd i.stroke i.hypertension i.diabetes i.heart i.depressive i.tbi i.smoking i.psychosis2,or
+logistic dem_flag i.Lamot age_at_end_ref_yr i.race_recode i.sex_ident_cd i.stroke i.hypertension i.diabetes i.heart i.depressive i.tbi i.smoking i.psychosis2,or
+logistic dem_flag i.NorHyd age_at_end_ref_yr i.race_recode i.sex_ident_cd i.stroke i.hypertension i.diabetes i.heart i.depressive i.tbi i.smoking i.psychosis2,or
+logistic dem_flag i.Others_Fluox_ProHyd age_at_end_ref_yr i.race_recode i.sex_ident_cd i.stroke i.hypertension i.diabetes i.heart i.depressive i.tbi i.smoking i.psychosis2,or
+
+translate "J:\Geriatrics\Litke_CMS\2019\Output\in_progress\Avi recommended table4.smcl" "J:\Geriatrics\Litke_CMS\2019\Output\in_progress\Avi recommended table4.pdf"
+
+log close 
+
+
+
+
+H="Bynum equation for Lauren's code"
+use "${intpath}/partd.dta", clear 
+
+gen ndc=substr(prod_srvc_id, 1, strlen(prod_srvc_id)-2)
+keep bene_id ndc
+
+joinby ndc using "${intpath}/drug_name.dta"
+
+duplicates report bene_id drug_name
+return list 
+duplicates drop bene_id drug_name, force 
+
+drop ndc
+
+save "${intpath}/drug_name_complete.dta", replace 
+
+
+use "J:\Geriatrics\Litke_CMS\2019\Output\in_progress\new_bynum\bene_ADRD_all_sources_2019", clear 
+rename *, lower
+merge 1:m bene_id using "${intpath}/drug_name_complete.dta", nogen
+
+//create analytic groups 
+
+tab drug_name
+
+gen drug_name_regroup = 6 if drug_name == "Fluox" | drug_name== "ProHyd"
+replace drug_name_regroup = 1 if drug_name == "AmiHyd1"
+replace drug_name_regroup = 2 if drug_name == "FluvMal"
+replace drug_name_regroup = 3 if drug_name == "CPZ"
+replace drug_name_regroup = 4 if drug_name == "Lamot"
+replace drug_name_regroup = 5 if drug_name == "NorHyd"
+by bene_id, sort: replace drug_name_regroup = 7 if _N>1
+duplicates drop bene_id, force
+
+label define drug_name_regroup 0 "no drug taken" 1 "AmiHyd1" 2 "FluvMal" 3 "CPZ" 4 "Lamot" 5 "NorHyd" 6 "Others (Fluox + ProHyd)" 7 "take more than one drug"
+label values drug_name_regroup drug_name_regroup
+
+tab drug_name_regroup,m
+recode drug_name_regroup (.=0)
+
+gen everdrug=drug_name_regroup!=0
+tab everdrug
+
+//replace adrd missing to 0
+
+replace adrd_dx=0 if adrd_dx==.
+
+tab adrd_dx drug_name_regroup
+
+logistic adrd_dx i.drug_name_regroup,or
+
+save "${intpath}/newBynum.dta", replace 
+
+//merge to covariates 
+use "${intpath}/covariates.dta",clear 
+
+//recode comorbidities
+
+tab hypertension
+tab diabetes
+tab stroke
+tab heart
+tab depressive
+tab tbi
+tab smoking
+tab psychosis2
+tab rheumatoid_arthritis
+
+merge 1:1 bene_id using "${intpath}/newBynum.dta"
+
+save "${intpath}/newBynum2.dta",replace 
+
+//merge to medpar to get snf stay less than 100 & mbsf 
+use "${datapath}\medpar\medpar_claims.dta", clear 
+rename *,lower
+keep bene_id dgns_*_cd ss_ls_snf_ind_cd los_day_cnt
+drop dgns_e_* dgns_poa_cd
+
+gen snf_lessthan100=ss_ls_snf_ind_cd=="N" & los_day_cnt<100
+
+keep bene_id snf_lessthan100
+
+//drop duplicates 
+sort bene_id snf_lessthan100
+quietly by bene_id snf_lessthan100: gen dup=cond(_N==1, 0, _n)
+drop if dup>1
+drop if dup>0
+drop dup
+
+drop if snf_lessthan100==0
+duplicates report bene_id
+
+save "${intpath}/medpar_new.dta",replace
+
+preserve 
+use "${datapath}\mbsf_abcd\mbsf_claims.dta",clear 
+keep bene_id age_at_end_ref_yr rti_race_cd sex_ident_cd
+
+tempfile mbsf
+save `mbsf'
+
+restore
+
+
+merge m:1 bene_id using `mbsf', nogen
+
+merge m:1 bene_id using "${intpath}/newBynum2.dta",nogen 
+
+recode snf_lessthan100 (.=0)
+recode adrd_dx (.=0)
+recode hypertension diabetes stroke heart depressive tbi smoking psychosis2 rheumatoid_arthritis (.=0)
+recode drug_name_regroup everdrug (.=0)
+
+destring sex_ident_cd, replace
+destring rti_race_cd, replace
+
+save "${intpath}/working_data_newBynum.dta",replace
+
+
+
+
+
+
+
+
+
+
+H="Avi's table5"
+log using "J:\Geriatrics\Litke_CMS\2019\Output\in_progress\Avi table5.smcl",replace 
+
+use "${intpath}/working_data_newBynum.dta",clear 
+
+//only keep snf stay greater than 100 days 
+drop if snf_lessthan100==1
+
+//recode tri race 
+gen race_recode=rti_race_cd
+destring race_recode,replace
+recode race_recode (0=4)(1=1)(2=2)(3=4)(4=4)(5=3)(6=4)
+label define race_recode 1 "non-Hispanic White" 2 "non-Hispanic Black" 3 "Hispanic" 4 "Others"
+label values race_recode race_recode
+
+
+//create RA med flag 
+//everdrug flag 
+gen ra_anydrug_flag=.
+
+replace ra_anydrug_flag=0 if rheumatoid_arthritis==0 & everdrug==0
+replace ra_anydrug_flag=1 if rheumatoid_arthritis==1 & everdrug==1
+replace ra_anydrug_flag=2 if rheumatoid_arthritis==1 & everdrug==0
+replace ra_anydrug_flag=3 if rheumatoid_arthritis==0 & everdrug==1
+
+label define ra_anydrug_flag 0 "no RA no drug" 1 "RA+drug" 2 "RA+no drug" 3 "no RA+drug" 
+label values ra_anydrug_flag ra_anydrug_flag
+
+tab ra_anydrug_flag,m
+
+//AmiHyd1
+gen ra_AmiHyd1_flag=.
+
+replace ra_AmiHyd1_flag=0 if rheumatoid_arthritis==0 & drug_name_regroup!=1
+replace ra_AmiHyd1_flag=1 if rheumatoid_arthritis==1 & drug_name_regroup==1
+replace ra_AmiHyd1_flag=2 if rheumatoid_arthritis==1 & drug_name_regroup!=1
+replace ra_AmiHyd1_flag=3 if rheumatoid_arthritis==0 & drug_name_regroup==1
+
+label define ra_AmiHyd1_flag 0 "no RA no med" 1 "RA+med" 2 "RA+no med" 3 "no RA+med"
+label values ra_AmiHyd1_flag ra_AmiHyd1_flag
+
+tab ra_AmiHyd1_flag,m
+
+//FluvMal
+gen ra_FluvMal_flag=.
+
+replace ra_FluvMal_flag=0 if rheumatoid_arthritis==0 & drug_name_regroup!=2
+replace ra_FluvMal_flag=1 if rheumatoid_arthritis==1 & drug_name_regroup==2
+replace ra_FluvMal_flag=2 if rheumatoid_arthritis==1 & drug_name_regroup!=2
+replace ra_FluvMal_flag=3 if rheumatoid_arthritis==0 & drug_name_regroup==2
+
+label define ra_FluvMal_flag 0 "no RA no med" 1 "RA+med" 2 "RA+no med" 3 "no RA+med"
+label values ra_FluvMal_flag ra_FluvMal_flag
+
+tab ra_FluvMal_flag,m
+
+
+//CPZ
+gen ra_CPZ_flag=.
+
+replace ra_CPZ_flag=0 if rheumatoid_arthritis==0 & drug_name_regroup!=3
+replace ra_CPZ_flag=1 if rheumatoid_arthritis==1 & drug_name_regroup==3
+replace ra_CPZ_flag=2 if rheumatoid_arthritis==1 & drug_name_regroup!=3
+replace ra_CPZ_flag=3 if rheumatoid_arthritis==0 & drug_name_regroup==3
+
+label define ra_CPZ_flag 0 "no RA no med" 1 "RA+med" 2 "RA+no med" 3 "no RA+med"
+label values ra_CPZ_flag ra_CPZ_flag
+
+tab ra_CPZ_flag,m
+
+
+//Lamot
+gen ra_Lamot_flag=.
+
+replace ra_Lamot_flag=0 if rheumatoid_arthritis==0 & drug_name_regroup!=4
+replace ra_Lamot_flag=1 if rheumatoid_arthritis==1 & drug_name_regroup==4
+replace ra_Lamot_flag=2 if rheumatoid_arthritis==1 & drug_name_regroup!=4
+replace ra_Lamot_flag=3 if rheumatoid_arthritis==0 & drug_name_regroup==4
+
+label define ra_Lamot_flag 0 "no RA no med" 1 "RA+med" 2 "RA+no med" 3 "no RA+med"
+label values ra_Lamot_flag ra_Lamot_flag
+
+tab ra_Lamot_flag,m
+
+
+//NorHyd
+gen ra_NorHyd_flag=.
+
+replace ra_NorHyd_flag=0 if rheumatoid_arthritis==0 & drug_name_regroup!=5
+replace ra_NorHyd_flag=1 if rheumatoid_arthritis==1 & drug_name_regroup==5
+replace ra_NorHyd_flag=2 if rheumatoid_arthritis==1 & drug_name_regroup!=5
+replace ra_NorHyd_flag=3 if rheumatoid_arthritis==0 & drug_name_regroup==5
+
+label define ra_NorHyd_flag 0 "no RA no med" 1 "RA+med" 2 "RA+no med" 3 "no RA+med"
+label values ra_NorHyd_flag ra_NorHyd_flag
+
+tab ra_NorHyd_flag,m
+
+
+//FluxProHyd
+gen ra_FluxProHyd_flag=.
+
+replace ra_FluxProHyd_flag=0 if rheumatoid_arthritis==0 & drug_name_regroup!=6
+replace ra_FluxProHyd_flag=1 if rheumatoid_arthritis==1 & drug_name_regroup==6
+replace ra_FluxProHyd_flag=2 if rheumatoid_arthritis==1 & drug_name_regroup!=6
+replace ra_FluxProHyd_flag=3 if rheumatoid_arthritis==0 & drug_name_regroup==6
+
+label define ra_FluxProHyd_flag 0 "no RA no med" 1 "RA+med" 2 "RA+no med" 3 "no RA+med"
+label values ra_FluxProHyd_flag ra_FluxProHyd_flag
+
+tab ra_FluxProHyd_flag,m
+
+//bivariate analyses 
+preserve 
+
+keep if rheumatoid_arthritis==1
+tab stroke adrd_dx,chi2 row
+tab hypertension adrd_dx,chi2 row
+tab diabetes adrd_dx,chi2 row
+tab heart adrd_dx,chi2 row
+tab depressive adrd_dx,chi2 row
+tab tbi adrd_dx,chi2 row
+tab smoking adrd_dx,chi2 row
+tab psychosis2 adrd_dx,chi2 row
+
+restore
+
+//Table 5 models 
+//model1 
+logistic adrd_dx i.ra_anydrug_flag,or
+logistic adrd_dx i.ra_AmiHyd1_flag,or
+logistic adrd_dx i.ra_FluvMal_flag,or
+logistic adrd_dx i.ra_CPZ_flag,or
+logistic adrd_dx i.ra_Lamot_flag,or
+logistic adrd_dx i.ra_NorHyd_flag,or
+logistic adrd_dx i.ra_FluxProHyd_flag,or
+
+//model2
+logistic adrd_dx i.ra_anydrug_flag age_at_end_ref_yr i.race_recode i.sex_ident_cd,or
+logistic adrd_dx i.ra_AmiHyd1_flag age_at_end_ref_yr i.race_recode i.sex_ident_cd,or
+logistic adrd_dx i.ra_FluvMal_flag age_at_end_ref_yr i.race_recode i.sex_ident_cd,or
+logistic adrd_dx i.ra_CPZ_flag age_at_end_ref_yr i.race_recode i.sex_ident_cd,or
+logistic adrd_dx i.ra_Lamot_flag age_at_end_ref_yr i.race_recode i.sex_ident_cd,or
+logistic adrd_dx i.ra_NorHyd_flag age_at_end_ref_yr i.race_recode i.sex_ident_cd,or
+logistic adrd_dx i.ra_FluxProHyd_flag age_at_end_ref_yr i.race_recode i.sex_ident_cd,or
+
+
+//model3 
+logistic adrd_dx i.ra_anydrug_flag age_at_end_ref_yr i.race_recode i.sex_ident_cd i.stroke i.hypertension i.diabetes i.heart i.depressive i.tbi i.smoking i.psychosis2,or
+logistic adrd_dx i.ra_AmiHyd1_flag age_at_end_ref_yr i.race_recode i.sex_ident_cd i.stroke i.hypertension i.diabetes i.heart i.depressive i.tbi i.smoking i.psychosis2,or
+logistic adrd_dx i.ra_FluvMal_flag age_at_end_ref_yr i.race_recode i.sex_ident_cd i.stroke i.hypertension i.diabetes i.heart i.depressive i.tbi i.smoking i.psychosis2,or
+logistic adrd_dx i.ra_CPZ_flag age_at_end_ref_yr i.race_recode i.sex_ident_cd i.stroke i.hypertension i.diabetes i.heart i.depressive i.tbi i.smoking i.psychosis2,or
+logistic adrd_dx i.ra_Lamot_flag age_at_end_ref_yr i.race_recode i.sex_ident_cd i.stroke i.hypertension i.diabetes i.heart i.depressive i.tbi i.smoking i.psychosis2,or
+logistic adrd_dx i.ra_NorHyd_flag age_at_end_ref_yr i.race_recode i.sex_ident_cd i.stroke i.hypertension i.diabetes i.heart i.depressive i.tbi i.smoking i.psychosis2,or
+logistic adrd_dx i.ra_FluxProHyd_flag age_at_end_ref_yr i.race_recode i.sex_ident_cd i.stroke i.hypertension i.diabetes i.heart i.depressive i.tbi i.smoking i.psychosis2,or
+
+
+translate "J:\Geriatrics\Litke_CMS\2019\Output\in_progress\Avi table5.smcl" "J:\Geriatrics\Litke_CMS\2019\Output\in_progress\Avi table5.pdf"
+
+log close 
+
+
+
+
+
+
+
+
+
+
+

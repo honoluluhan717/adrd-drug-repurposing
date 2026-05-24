@@ -1,0 +1,1422 @@
+= V4 Outline MultiLine NoSorting TabWidth=30
+
+H="clean data "
+
+global medi "/sc/cmsdata/drugsAD/Pepper Longitudinal 2012-2016/Raw Data"
+
+
+//Intermediate Data Path
+global intpath  "/sc/cmsdata/drugsAD/Pepper Longitudinal 2012-2016/2012/Int Data 2012"
+
+// Final Data Path
+global datapath  "/sc/cmsdata/drugsAD/Pepper Longitudinal 2012-2016/2012/Raw Data 2012"
+
+//Log files path
+global outpath  "/sc/cmsdata/drugsAD/Pepper Longitudinal 2012-2016/2012/Raw Data 2012/Output/in_progress"
+
+
+H="import SAS files and create Stata files"
+// Define the folder path
+local folder "J:\Geriatrics\Litke_CMS\5yr Request\14543\2012\decrypted data 2012\2012 SAS Datasets"
+
+// List of SAS files
+local files bcarrier_line hospice_base_claims mbsf_abcd_summary medpar_all_file outpatient_base_claims outpatient_revenue_center pde_file
+
+// Loop through each file
+foreach file in `files' {
+    // Import SAS file
+    import sas "`folder'/`file'.sas7bdat", clear
+    
+    // Save as Stata .dta file
+    save "`folder'/`file'.dta", replace
+}
+
+
+H="get phenothiazines"
+use "/sc/cmsdata/drugsAD/Pepper Longitudinal 2012-2016/2012/Raw Data 2012/pde_file.dta",clear 
+rename*,lower
+keep bene_id prod_srvc_id gnn
+
+gen ndc=substr(prod_srvc_id, 1, strlen(prod_srvc_id)-2)
+
+gen CPZ=ustrpos(gnn, "CHLORPROMAZINE")
+gen PCPZ=ustrpos(gnn, "PROCHLORPERAZINE")
+gen TriHyd=ustrpos(gnn, "TRIFLUOPERAZINE")
+gen AmiHyd=ustrpos(gnn, "AMITRIPTYLINE")
+recode AmiHyd (14=1)
+gen PFZ=ustrpos(gnn, "PERPHENAZINE")
+gen Flup=ustrpos(gnn, "FLUPHENAZINE")
+gen ProHyd=ustrpos(gnn, "PROMETHAZINE")
+gen NorHyd=ustrpos(gnn, "NORTRIPTYLINE")
+
+gen drug_name=.
+replace drug_name = 1 if CPZ==1
+replace drug_name = 2 if PCPZ==1
+replace drug_name = 3 if TriHyd==1
+replace drug_name = 4 if AmiHyd==1
+replace drug_name = 5 if PFZ==1
+replace drug_name = 6 if Flup==1
+replace drug_name = 7 if ProHyd==1 
+replace drug_name = 8 if NorHyd==1 
+
+drop if drug_name==.
+drop gnn prod_srvc_id ndc
+
+duplicates report bene_id drug_name
+return list 
+
+foreach x in CPZ PCPZ TriHyd AmiHyd PFZ Flup ProHyd NorHyd {
+	by bene_id,sort:egen a=max(`x')
+    	replace `x'=a
+	drop a
+}
+
+drop drug_name
+duplicates drop
+
+egen ever_phenothiazines=rowmax(CPZ PCPZ TriHyd AmiHyd PFZ Flup ProHyd NorHyd)
+egen count_phenothiazines=rowtotal(CPZ PCPZ TriHyd AmiHyd PFZ Flup ProHyd NorHyd)
+
+save "/sc/cmsdata/drugsAD/Pepper Longitudinal 2012-2016/2012/Int Data 2012/phenothiazines.dta", replace 
+
+
+H="get anti-inflammatory drugs"
+use "/sc/cmsdata/drugsAD/Pepper Longitudinal 2012-2016/Raw Data/2012/pde_file.dta",clear 
+
+rename*,lower
+
+//1. NON-SELECTIVE NSAIDS (17 DRUGS) 
+gen non_selec_nsaids=ustrpos(gnn, "DICLOFENAC") | ustrpos(gnn, "DIFLUNISAL") | ustrpos(gnn, "ETODOLAC") | ustrpos(gnn, "FENOPROFEN") | ustrpos(gnn, "FLURBIPROFEN") | ustrpos(gnn, "IBUPROFEN") | ustrpos(gnn, "INDOMETHACIN") | ustrpos(gnn, "KETOPROFEN") | ustrpos(gnn, "KETOROLAC") | ustrpos(gnn, "MEFENAMIC ACID") | ustrpos(gnn, "MELOXICAM") | ustrpos(gnn, "NABUMETONE") | ustrpos(gnn, "NAPROXEN") | ustrpos(gnn, "OXAPROZIN") | ustrpos(gnn, "PIROXICAM") | ustrpos(gnn, "SULINDAC") | ustrpos(gnn, "TOLMETIN")
+
+//2. COX-2 SELECTIVE NSAIDS (1 DRUG) 
+
+gen cox2_selec_nsaids=ustrpos(gnn, "CELECOXIB")
+
+//3. CORTICOSTEROIDS: (30 DRUGS) 
+
+gen corticosteroids=0 
+
+local druglist "BUDESONIDE BECLOMETHASONE BETAMETHASONE CELESTONE CUTIVATE DECADRON DELTASONE DEPO-MEDROL DEXAMETHASONE DIPROLENE DIPROSONE FLONASE FLOVENT FLUDROCORTISONE KENALOG MEDROL MEGACE MEGESTROL ACETATE METHYLPREDNISOLONE ORASONE PREDNISOLONE PREDNISONE RHINOCORT SOLU-MEDROL SOLUMEDROL TRIAMCINOLONE ACETONIDE PULMICORT"
+
+foreach drug in `druglist' {
+    replace corticosteroids = 1 if ustrpos(gnn, "`drug'") > 0
+}
+
+replace corticosteroids = 1 if ustrpos(gnn, "ENTOCORT EC")>0
+
+//4. DISEASE MODIFYING ANTI RHEUMATIC DRUG DMARD (19 DRUGS) 
+
+gen anti_theumatic=0
+
+local druglist1 "SULFASALAZINE MESALAZINE DEUCRAVACITINIB APREMILAST ABATACEPT BIMEKIZUMAB IXEKIZUMAB RITUXIMAB TOCILIZUMAB SARILUMAB ANAKINRA USTEKINUMAB SECUKINUMAB BELIMUMAB LEFLUNOMIDE GUSELKUMAB  RIZANKIZUMAB TILDRAKIZUMAB DUPILUMAB"
+
+foreach drug in `druglist1' {
+    replace anti_theumatic = 1 if ustrpos(gnn, "`drug'") > 0
+}
+
+//5. TARGETED DMARD (1 DRUG)
+
+gen targeted_dmard=ustrpos(gnn,"TOFACITINIB") | ustrpos(gnn,"ABROCITINIB") | ustrpos(gnn,"BARICITINIB") | ustrpos(gnn,"FILGOTINIB") | ustrpos(gnn,"UPADACITINIB")
+
+//6. OTHER (7 DRUGS) 
+
+gen other_drug=ustrpos(gnn, "CICLOSPORIN") | ustrpos(gnn,"CYCLOSPORIN") | ustrpos(gnn,"AZATHIOPRINE") | ustrpos(gnn,"TACROLIMUS") | ustrpos(gnn, "SIROLIMUS") | ustrpos(gnn, "METHOTREXATE") | ustrpos(gnn, "HYDROXYCHLOROQUINE") 
+
+//7. IFN (3 DRUGS) 
+
+gen inf_drug=ustrpos(gnn,"PEGINTERFERON") | ustrpos(gnn,"INTERFERON BETA") | ustrpos(gnn,"ANIFROLUMAB")
+
+
+//8. ANT TNF (7 DRUGS) 
+
+gen ant_tnf=ustrpos(gnn, "ADALIMUMAB") | ustrpos(gnn,"CERTOLIZUMAB") | ustrpos(gnn,"ETANERCEPT") | ustrpos(gnn,"GOLIMUMAB") | ustrpos(gnn, "INFLIXIMAB") | ustrpos(gnn,"ANTI INTEGRIN") | ustrpos(gnn, "VEDOLIZUMAB")
+
+//9. overall anti-inflammatory drug list 
+gen anti_inflammatory_drug=0
+
+replace anti_inflammatory_drug=1 if non_selec_nsaids==1 | cox2_selec_nsaids==1 | corticosteroids==1 | anti_theumatic==1 | targeted_dmard==1 | other_drug==1 | inf_drug==1 | ant_tnf==1 
+
+tab anti_inflammatory_drug
+
+duplicates drop bene_id,force
+
+save "/sc/cmsdata/drugsAD/Pepper Longitudinal 2012-2016/2012/Int Data 2012/pde_anti_inflammatory_drug.dta",replace
+
+
+
+H="get covariates"
+//append and merge all medicare data
+//carrier
+use "${datapath}/bcarrier_claims.dta", clear 
+	rename *,lower
+	keep bene_id icd_dgns_cd*
+	gen hypertension=0
+	gen diabetes=0
+	gen stroke=0
+	gen heart=0
+	gen depressive=0
+	gen tbi=0
+	gen smoking=0
+	gen psychosis2=0
+	gen rheumatoid_arthritis=0
+	
+
+forvalues i=1/12 {
+	//hypertension 
+	replace hypertension=1 if inlist(substr(icd_dgns_cd`i',1,4),"4011") | inlist(substr(icd_dgns_cd`i',1,4),"4019") | inlist(substr(icd_dgns_cd`i',1,4),"4010") 
+	//diabetes 
+			replace diabetes=1 if inlist(substr(icd_dgns_cd`i',1,4),"9659") | inlist(substr(icd_dgns_cd`i',1,4),"8628") 
+	//stroke 
+			replace stroke=1 if inlist(substr(icd_dgns_cd`i',1,4),"43301") | inlist(substr(icd_dgns_cd`i',1,4),"43311") | inlist(substr(icd_dgns_cd`i',1,4),"43321") | inlist(substr(icd_dgns_cd`i',1,4),"43331") | inlist(substr(icd_dgns_cd`i',1,4),"43381")  | inlist(substr(icd_dgns_cd`i',1,4),"43391")  | inlist(substr(icd_dgns_cd`i',1,4),"43401") | inlist(substr(icd_dgns_cd`i',1,4),"43411")  | inlist(substr(icd_dgns_cd`i',1,4),"43491") 
+	//heart 
+			replace heart=1 if inlist(substr(icd_dgns_cd`i',1,4),"412") | inlist(substr(icd_dgns_cd`i',1,4),"4111") | inlist(substr(icd_dgns_cd`i',1,4),"4139")  | inlist(substr(icd_dgns_cd`i',1,4),"4142") | inlist(substr(icd_dgns_cd`i',1,4),"4144") | inlist(substr(icd_dgns_cd`i',1,4),"4148") | inlist(substr(icd_dgns_cd`i',1,4),"4292") | inlist(substr(icd_dgns_cd`i',1,5),"41401") | inlist(substr(icd_dgns_cd`i',1,5),"41402")  | inlist(substr(icd_dgns_cd`i',1,5),"41403") | inlist(substr(icd_dgns_cd`i',1,5),"41404") | inlist(substr(icd_dgns_cd`i',1,5),"41405")  | inlist(substr(icd_dgns_cd`i',1,5),"41406")  | inlist(substr(icd_dgns_cd`i',1,5),"41407")  | inlist(substr(icd_dgns_cd`i',1,5),"41410")  | inlist(substr(icd_dgns_cd`i',1,5),"41411") | inlist(substr(icd_dgns_cd`i',1,5),"41412") | inlist(substr(icd_dgns_cd`i',1,5),"41419") | inlist(substr(icd_dgns_cd`i',1,5),"40291") | inlist(substr(icd_dgns_cd`i',1,5),"40201") | inlist(substr(icd_dgns_cd`i',1,5),"40211") | inlist(substr(icd_dgns_cd`i',1,5),"40200") | inlist(substr(icd_dgns_cd`i',1,5),"40210") | inlist(substr(icd_dgns_cd`i',1,5),"40290")
+	//depressive symptoms 
+			replace depressive=1 if inlist(substr(icd_dgns_cd`i',1,2),"I4") | inlist(substr(icd_dgns_cd`i',1,4),"9921") | inlist(substr(icd_dgns_cd`i',1,4),"9923") | inlist(substr(icd_dgns_cd`i',1,4),"3492") 
+	//tbi 
+			replace tbi=1 if inlist(substr(icd_dgns_cd`i',1,4), "8020", "8021", "8024", "8025", "8026", "8027", "8028", "8029", "9050") | inlist(substr(icd_dgns_cd`i',1,5), "73382", "80050", "80100", "80150", "80220", "80221", "80222", "80223", "80224") | inlist(substr(icd_dgns_cd`i',1,5), "80225", "80226", "80227", "80228", "80230", "80231", "80232", "80233", "80234") | inlist(substr(icd_dgns_cd`i',1,5), "80235", "80236", "80237", "80238", "80300", "80350", "87363", "V5419", "8500") | inlist(substr(icd_dgns_cd`i',1,5), "85011", "85012", "8503", "8504", "85241", "85244", "85246", "85221", "85224")  | inlist(substr(icd_dgns_cd`i',1,5), "85226", "85201", "85204", "85206", "9251", "9064")
+	//smoking 
+			replace smoking=1 if inlist(substr(icd_dgns_cd`i',1,4),"3179") | inlist(substr(icd_dgns_cd`i',1,4),"8915")
+	//psychosis2
+			replace psychosis2=1 if inlist(substr(icd_dgns_cd`i',1,4),"9301", "9309", "9302", "29410", "29411", "29600", "29601") | inlist(substr(icd_dgns_cd`i',1,4),"29602", "29603", "29604", "29605", "29606", "29681")
+	//rheumatoid arthritis
+			replace rheumatoid_arthritis = 1 if inlist(substr(icd_dgns_cd`i',1,4),"41481", "7142", "3596", "7140", "3571", "7142", "71489", "7149")
+}
+
+keep bene_id hypertension diabetes stroke heart depressive tbi smoking psychosis2 rheumatoid_arthritis
+save "${intpath}/comorbidities_carrier.dta",replace
+
+
+//hospice, outpatient 
+foreach x in hospice outpatient {
+	use "${datapath}/`x'_base_claims.dta", clear 
+	
+	rename *,lower
+	keep bene_id icd_dgns_cd*
+	gen hypertension=0
+	gen diabetes=0
+	gen stroke=0
+	gen heart=0
+	gen depressive=0
+	gen tbi=0
+	gen smoking=0
+	gen psychosis2=0
+	gen rheumatoid_arthritis=0
+
+	
+forvalues i=1/25 {
+	//hypertension 
+	replace hypertension=1 if inlist(substr(icd_dgns_cd`i',1,4),"4011") | inlist(substr(icd_dgns_cd`i',1,4),"4019") | inlist(substr(icd_dgns_cd`i',1,4),"4010") 
+	//diabetes 
+			replace diabetes=1 if inlist(substr(icd_dgns_cd`i',1,4),"9659") | inlist(substr(icd_dgns_cd`i',1,4),"8628") 
+	//stroke 
+			replace stroke=1 if inlist(substr(icd_dgns_cd`i',1,4),"43301") | inlist(substr(icd_dgns_cd`i',1,4),"43311") | inlist(substr(icd_dgns_cd`i',1,4),"43321") | inlist(substr(icd_dgns_cd`i',1,4),"43331") | inlist(substr(icd_dgns_cd`i',1,4),"43381")  | inlist(substr(icd_dgns_cd`i',1,4),"43391")  | inlist(substr(icd_dgns_cd`i',1,4),"43401") | inlist(substr(icd_dgns_cd`i',1,4),"43411")  | inlist(substr(icd_dgns_cd`i',1,4),"43491") 
+	//heart 
+			replace heart=1 if inlist(substr(icd_dgns_cd`i',1,4),"412") | inlist(substr(icd_dgns_cd`i',1,4),"4111") | inlist(substr(icd_dgns_cd`i',1,4),"4139")  | inlist(substr(icd_dgns_cd`i',1,4),"4142") | inlist(substr(icd_dgns_cd`i',1,4),"4144") | inlist(substr(icd_dgns_cd`i',1,4),"4148") | inlist(substr(icd_dgns_cd`i',1,4),"4292") | inlist(substr(icd_dgns_cd`i',1,5),"41401") | inlist(substr(icd_dgns_cd`i',1,5),"41402")  | inlist(substr(icd_dgns_cd`i',1,5),"41403") | inlist(substr(icd_dgns_cd`i',1,5),"41404") | inlist(substr(icd_dgns_cd`i',1,5),"41405")  | inlist(substr(icd_dgns_cd`i',1,5),"41406")  | inlist(substr(icd_dgns_cd`i',1,5),"41407")  | inlist(substr(icd_dgns_cd`i',1,5),"41410")  | inlist(substr(icd_dgns_cd`i',1,5),"41411") | inlist(substr(icd_dgns_cd`i',1,5),"41412") | inlist(substr(icd_dgns_cd`i',1,5),"41419") | inlist(substr(icd_dgns_cd`i',1,5),"40291") | inlist(substr(icd_dgns_cd`i',1,5),"40201") | inlist(substr(icd_dgns_cd`i',1,5),"40211") | inlist(substr(icd_dgns_cd`i',1,5),"40200") | inlist(substr(icd_dgns_cd`i',1,5),"40210") | inlist(substr(icd_dgns_cd`i',1,5),"40290")
+	//depressive symptoms 
+			replace depressive=1 if inlist(substr(icd_dgns_cd`i',1,2),"I4") | inlist(substr(icd_dgns_cd`i',1,4),"9921") | inlist(substr(icd_dgns_cd`i',1,4),"9923") | inlist(substr(icd_dgns_cd`i',1,4),"3492") 
+	//tbi 
+			replace tbi=1 if inlist(substr(icd_dgns_cd`i',1,4), "8020", "8021", "8024", "8025", "8026", "8027", "8028", "8029", "9050") | inlist(substr(icd_dgns_cd`i',1,5), "73382", "80050", "80100", "80150", "80220", "80221", "80222", "80223", "80224") | inlist(substr(icd_dgns_cd`i',1,5), "80225", "80226", "80227", "80228", "80230", "80231", "80232", "80233", "80234") | inlist(substr(icd_dgns_cd`i',1,5), "80235", "80236", "80237", "80238", "80300", "80350", "87363", "V5419", "8500") | inlist(substr(icd_dgns_cd`i',1,5), "85011", "85012", "8503", "8504", "85241", "85244", "85246", "85221", "85224")  | inlist(substr(icd_dgns_cd`i',1,5), "85226", "85201", "85204", "85206", "9251", "9064")
+	//smoking 
+			replace smoking=1 if inlist(substr(icd_dgns_cd`i',1,4),"3179") | inlist(substr(icd_dgns_cd`i',1,4),"8915")
+	//psychosis2
+			replace psychosis2=1 if inlist(substr(icd_dgns_cd`i',1,4),"9301", "9309", "9302", "29410", "29411", "29600", "29601") | inlist(substr(icd_dgns_cd`i',1,4),"29602", "29603", "29604", "29605", "29606", "29681")
+	//rheumatoid arthritis
+			replace rheumatoid_arthritis = 1 if inlist(substr(icd_dgns_cd`i',1,4),"41481", "7142", "3596", "7140", "3571", "7142", "71489", "7149")
+}
+
+keep bene_id hypertension diabetes stroke heart depressive tbi smoking psychosis2 rheumatoid_arthritis
+save "${intpath}/comorbidities_`x'.dta",replace
+}
+
+//medpar 
+use "${datapath}/medpar_all_file.dta", clear 
+rename *,lower
+keep bene_id dgns_*_cd
+drop dgns_e_* dgns_poa_cd
+
+gen hypertension=0
+gen diabetes=0
+gen stroke=0
+gen heart=0
+gen depressive=0
+gen tbi=0
+gen smoking=0
+gen psychosis2=0
+gen rheumatoid_arthritis=0
+
+forvalues i=1/25 {
+	//hypertension 
+	replace hypertension=1 if inlist(substr(dgns_`i'_cd,1,4),"4011") | inlist(substr(dgns_`i'_cd,1,4),"4019") | inlist(substr(dgns_`i'_cd,1,4),"4010") 
+	//diabetes 
+			replace diabetes=1 if inlist(substr(dgns_`i'_cd,1,4),"9659") | inlist(substr(dgns_`i'_cd,1,4),"8628") 
+	//stroke 
+			replace stroke=1 if inlist(substr(dgns_`i'_cd,1,4),"43301") | inlist(substr(dgns_`i'_cd,1,4),"43311") | inlist(substr(dgns_`i'_cd,1,4),"43321") | inlist(substr(dgns_`i'_cd,1,4),"43331") | inlist(substr(dgns_`i'_cd,1,4),"43381")  | inlist(substr(dgns_`i'_cd,1,4),"43391")  | inlist(substr(dgns_`i'_cd,1,4),"43401") | inlist(substr(dgns_`i'_cd,1,4),"43411")  | inlist(substr(dgns_`i'_cd,1,4),"43491") 
+	//heart 
+			replace heart=1 if inlist(substr(dgns_`i'_cd,1,4),"412") | inlist(substr(dgns_`i'_cd,1,4),"4111") | inlist(substr(dgns_`i'_cd,1,4),"4139")  | inlist(substr(dgns_`i'_cd,1,4),"4142") | inlist(substr(dgns_`i'_cd,1,4),"4144") | inlist(substr(dgns_`i'_cd,1,4),"4148") | inlist(substr(dgns_`i'_cd,1,4),"4292") | inlist(substr(dgns_`i'_cd,1,5),"41401") | inlist(substr(dgns_`i'_cd,1,5),"41402")  | inlist(substr(dgns_`i'_cd,1,5),"41403") | inlist(substr(dgns_`i'_cd,1,5),"41404") | inlist(substr(dgns_`i'_cd,1,5),"41405")  | inlist(substr(dgns_`i'_cd,1,5),"41406")  | inlist(substr(dgns_`i'_cd,1,5),"41407")  | inlist(substr(dgns_`i'_cd,1,5),"41410")  | inlist(substr(dgns_`i'_cd,1,5),"41411") | inlist(substr(dgns_`i'_cd,1,5),"41412") | inlist(substr(dgns_`i'_cd,1,5),"41419") | inlist(substr(dgns_`i'_cd,1,5),"40291") | inlist(substr(dgns_`i'_cd,1,5),"40201") | inlist(substr(dgns_`i'_cd,1,5),"40211") | inlist(substr(dgns_`i'_cd,1,5),"40200") | inlist(substr(dgns_`i'_cd,1,5),"40210") | inlist(substr(dgns_`i'_cd,1,5),"40290")
+	//depressive symptoms 
+			replace depressive=1 if inlist(substr(dgns_`i'_cd,1,2),"I4") | inlist(substr(dgns_`i'_cd,1,4),"9921") | inlist(substr(dgns_`i'_cd,1,4),"9923") | inlist(substr(dgns_`i'_cd,1,4),"3492") 
+	//tbi 
+			replace tbi=1 if inlist(substr(dgns_`i'_cd,1,4), "8020", "8021", "8024", "8025", "8026", "8027", "8028", "8029", "9050") | inlist(substr(dgns_`i'_cd,1,5), "73382", "80050", "80100", "80150", "80220", "80221", "80222", "80223", "80224") | inlist(substr(dgns_`i'_cd,1,5), "80225", "80226", "80227", "80228", "80230", "80231", "80232", "80233", "80234") | inlist(substr(dgns_`i'_cd,1,5), "80235", "80236", "80237", "80238", "80300", "80350", "87363", "V5419", "8500") | inlist(substr(dgns_`i'_cd,1,5), "85011", "85012", "8503", "8504", "85241", "85244", "85246", "85221", "85224")  | inlist(substr(dgns_`i'_cd,1,5), "85226", "85201", "85204", "85206", "9251", "9064")
+	//smoking 
+			replace smoking=1 if inlist(substr(dgns_`i'_cd,1,4),"3179") | inlist(substr(dgns_`i'_cd,1,4),"8915")
+	//psychosis2
+			replace psychosis2=1 if inlist(substr(dgns_`i'_cd,1,4),"9301", "9309", "9302", "29410", "29411", "29600", "29601") | inlist(substr(dgns_`i'_cd,1,4),"29602", "29603", "29604", "29605", "29606", "29681")
+	//rheumatoid arthritis
+			replace rheumatoid_arthritis = 1 if inlist(substr(dgns_`i'_cd,1,4),"41481", "7142", "3596", "7140", "3571", "7142", "71489", "7149")
+}
+
+keep bene_id hypertension diabetes stroke heart depressive tbi smoking psychosis2 rheumatoid_arthritis
+
+save "${intpath}/comorbidities_medpar.dta",replace
+
+
+
+//merge all data 
+use "${intpath}/comorbidities_carrier.dta",clear 
+append using "${intpath}/comorbidities_hospice.dta"
+append using "${intpath}/comorbidities_outpatient.dta"
+append using "${intpath}/comorbidities_medpar.dta"
+
+//drop duplicates 
+sort bene_id
+foreach x in hypertension diabetes stroke heart depressive tbi smoking psychosis2 rheumatoid_arthritis {
+	by bene_id: egen a=max(`x')
+	replace `x'=a
+	drop a 
+}
+
+duplicates drop
+
+save "/sc/cmsdata/drugsAD/Pepper Longitudinal 2012-2016/2012/Int Data 2012/covariates.dta",replace 
+
+
+
+
+
+H="get snf + merge to mbsf"
+
+//get snf stay from medpar 
+use "${datapath}/2012/medpar_all_file.dta", clear 
+rename *,lower
+keep bene_id ss_ls_snf_ind_cd los_day_cnt
+
+gen snf_lessthan100=ss_ls_snf_ind_cd=="N" & los_day_cnt<100
+
+keep bene_id snf_lessthan100
+
+duplicates drop
+
+preserve 
+use "${datapath}/2012/mbsf_abcd_summary.dta",clear 
+rename *,lower
+save "${datapath}/2012/mbsf_abcd_summary.dta",replace
+restore 
+
+merge m:1 bene_id using "${datapath}/2012/mbsf_abcd_summary.dta", nogen
+
+
+duplicates report bene_id
+duplicates drop bene_id,force
+
+keep bene_id age_at_end_ref_yr rti_race_cd sex_ident_cd snf_lessthan100
+
+save "/sc/cmsdata/drugsAD/Pepper Longitudinal 2012-2016/2012/Int Data 2012/demo_data.dta",replace 
+
+
+H="get new Bynum code******"
+
+
+H="step 1"
+/*start-header
+################################################################################
+#
+# Purpose           : Get CARRIER ADRD claims for a single year of data using Julie Bynum definitions
+#
+# Input files       : Single year of CARRIER data (.sas7bdat format; both Line and Claims files)
+#
+# Output files      : diag_adrd_carrier_&year    : Beneficiary-Diagnosis level file with all ADRD Dx. codes found in claims
+#                     servdt_adrd_carrier_&year  : Beneficiary-Service Date level file derived from diag_adrd_carrier_&year
+#
+# Notes             : Update below local variables as necessary
+#
+#                     Program assumes that the diagnosis variables (often ICD_DGNS_CD1 - ICD_DGNS_CD12)
+#                     are sequential. If this is not the case for your files, you may need
+#                     to find the locations of macro variables `dx_first' and `dx_last'
+#                     to update the list to match your data using individual variable names
+#                     or other methods appropriate for your data. (as tested, non-sequential
+#					  diagnosis variables have not been an issue, but will at least cause inefficiency)
+#
+################################################################################
+end-header*/
+clear
+
+cd "~" /* set WD to root */
+
+/*****************************************************************************/
+/* START - USERS MUST UPDATE */
+/*****************************************************************************/
+* Update the paths to fit your file setup;
+local output_folder "/sc/cmsdata/drugsAD/Pepper Longitudinal 2012-2016/2012/Output 2012" /* update with location of you want data stored to */
+local medicare_folder "/sc/cmsdata/drugsAD/Pepper Longitudinal 2012-2016/2012/Raw Data 2012" /* update with location of medicare data */
+
+
+* Update the following macro variables to fit your file;
+* Use UPPER CASE for variable names;
+local claim_file_name = "bcarrier_claims.dta"
+local line_file_name = "bcarrier_line.dta"
+local data_year = 2012 /* Used in File Names - See "Output files" above */
+local line_date = "LINE_1ST_EXPNS_DT" /* If necessary, update with the variable name of the Line First Expense Date */
+local claim_begin_date = "CLM_FROM_DT" /* If necessary, update with the variable name of the claim from/admission date */
+local claim_thru_date = "CLM_THRU_DT" /* If necessary, update with the variable name of the claim thru/discharge date */
+local dx_line = "LINE_ICD_DGNS_CD" /* If necessary, update with the variable name of the LINE diagnosis code in your data */
+local dx_first = "ICD_DGNS_CD1" /* If necessary, update with the variable name of the FIRST diagnosis code in your data */
+local dx_last = "ICD_DGNS_CD12" /* If necessary, update with the variable name of the LAST diagnosis code in your data */
+local claim_id = "CLM_ID" /* If necesscary, update with variable name of the Claim ID in the Line and Claim files */
+local line_prcsg_ind_cd = "LINE_PRCSG_IND_CD" /* if necessary, update with variable name of the Line Processing Indicator Code */
+local line_alowd_chrg_amt = "LINE_ALOWD_CHRG_AMT" /* if necessary, update with variable name of the Line Allowed Charge Amount */
+
+/*****************************************************************************/
+/* END - USERS MUST UPDATE */
+/*****************************************************************************/
+
+local DemDx "F0150 F0151 F0280 F0281 F0390 F0391 G300 G301 G308 G309 G3101 G3109 G3183 F04 G311 G312 R4181 G310 G3184 F067 2900 2901 29010 29011 29012 29013 2902 29020 29021 2903 2904 29040 29041 29042 29043 2941 29410 29411 2942 29420 29421 331 3310 33111 33119 33182 2908 2940 3312 3317 3318 33189 797"
+
+* import the claim file
+local vars_to_keep 	BENE_ID `claim_id' `claim_begin_date' `claim_thru_date' `dx_first'-`dx_last'
+
+cd "`medicare_folder'"
+use `claim_file_name', clear
+keep `vars_to_keep'
+
+sort BENE_ID `claim_id'
+
+tempfile claims
+save `claims'
+
+
+* import the line file
+local vars_to_keep 	BENE_ID `claim_id' `line_date' `line_prcsg_ind_cd' `line_alowd_chrg_amt' `dx_line'
+
+
+use `line_file_name', clear
+keep `vars_to_keep'
+
+sort BENE_ID `claim_id' 
+
+merge m:1 BENE_ID `claim_id' using `claims'
+
+drop if inlist(`line_prcsg_ind_cd', "I", "M", "R", "") | `line_alowd_chrg_amt' <= 0
+
+tab1 `line_prcsg_ind_cd', missing
+summarize `line_alowd_chrg_amt'
+
+codebook, compact
+list in 1/10, clean
+
+
+* Generate standard variables 
+generate SERVICE_DT = `claim_begin_date'
+	replace SERVICE_DT = `line_date' if  `claim_begin_date' ==.
+format SERVICE_DT %td
+label variable SERVICE_DT "Date of ADRD Dx claim"
+
+generate SERVICE_THRU_DT = `claim_thru_date'
+	replace SERVICE_THRU_DT = SERVICE_DT if `claim_thru_date' ==.
+format SERVICE_THRU_DT %td
+label variable SERVICE_THRU_DT "Thru date of ADRD Dx claim"
+
+generate DX = ""
+label variable DX "ADRD ICD9/10 Dx"
+
+generate ADRD_DX = 0
+label variable ADRD_DX "Presence of ADRD diagnosis. 1/0"
+
+
+* Generate new diagnosis variables to ensure similar vaming conventions
+local orig_dx_vars `dx_first'-`dx_last'
+
+local i = 1
+
+display `i'
+foreach v of varlist `orig_dx_vars' {
+	generate NEW_ICD_DGNS_CD`i' = `v'
+	local i = `i' + 1
+	display `i'
+}
+
+
+
+* loop through codes across all newly created variables
+foreach var of varlist NEW_ICD_DGNS_CD* {
+	foreach icd_code in `DemDx' {
+		quietly replace ADRD_DX = 1 if `var' == "`icd_code'"
+	}
+}
+
+
+
+* clean up data - only keep if observations with at least one ADRD diagnosis
+* remove any duplicates
+sort BENE_ID SERVICE_DT SERVICE_THRU_DT ADRD_DX
+quietly by BENE_ID SERVICE_DT SERVICE_THRU_DT ADRD_DX:  gen dup = cond(_N==1,0,_n)
+tabulate dup
+drop if dup > 1
+
+
+display "benes BEFORE dropping those without ADRD"
+codebook BENE_ID
+tabulate ADRD_DX
+
+keep if ADRD_DX==1
+
+display "benes AFTER dropping those without ADRD"
+codebook BENE_ID
+
+drop `claim_begin_date' `claim_thru_date' `orig_dx_vars' `line_date' `line_prcsg_ind_cd' `line_alowd_chrg_amt' dup 
+
+
+* Reshape to get all ADRD diagnosis codes 
+reshape long NEW_ICD_DGNS_CD, i(BENE_ID SERVICE_DT SERVICE_THRU_DT) j(DX_NUM)
+
+replace ADRD_DX = 0 /* re-initialize so we can just capture relevant codes this time */
+
+foreach icd_code in `DemDx'{
+	replace ADRD_DX = 1 if NEW_ICD_DGNS_CD == "`icd_code'"
+	replace DX = NEW_ICD_DGNS_CD if NEW_ICD_DGNS_CD == "`icd_code'"
+}
+
+
+* Check numbers
+display "benes and observations BEFORE dropping those without ADRD"
+codebook BENE_ID
+
+keep if ADRD_DX==1 /* keep only dx codes indicating ADRD */
+
+display "benes and observations AFTER dropping those without ADRD"
+codebook BENE_ID
+
+
+sort BENE_ID SERVICE_DT SERVICE_THRU_DT DX
+quietly by BENE_ID SERVICE_DT SERVICE_THRU_DT DX :  gen dup = cond(_N==1,0,_n)
+tabulate dup
+drop if dup > 1
+
+display "benes and observations AFTER dropping duplicates"
+codebook BENE_ID
+
+tab1 ADRD_DX DX
+
+keep BENE_ID SERVICE_DT SERVICE_THRU_DT ADRD_DX DX
+
+codebook, compact
+
+cd "`output_folder'"
+save "diag_adrd_carrier_`data_year'.dta", replace
+
+codebook
+list in 1/10
+tabulate DX
+
+/* Collapse to Service Date level */
+gen ONE = 1
+collapse (count) NUM_ADRD_DX=ONE, by(BENE_ID SERVICE_DT SERVICE_THRU_DT ADRD_DX)
+
+label variable NUM_ADRD_DX "Total ADRD Dx. by Service Date"
+
+display "benes and observations AFTER collapsing on visit"
+codebook BENE_ID
+
+tabulate ADRD_DX, missing
+summarize NUM_ADRD_DX
+
+
+save "servdt_adrd_carrier_`data_year'.dta", replace
+
+codebook, compact
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+H="step 2"
+/*start-header
+################################################################################
+#
+# Purpose           : Get Hospital Outpatient File (HOF) ADRD claims for a single year of data using Julie Bynum definitions
+#
+# Input files       : Single year of HOF data (.sas7bdat format; both Revenue and Claims files)
+#
+# Output files      : diag_adrd_hof_&year    : Beneficiary-Diagnosis level file with all ADRD Dx. codes found in claims
+#                     servdt_adrd_hof_&year  : Beneficiary-Service Date level file derived from diag_adrd_hof_&year
+#
+# Notes             : Update below local variables as necessary
+#
+#                     Program assumes that the diagnosis variables (often ICD_DGNS_CD1 - ICD_DGNS_CD25)
+#                     are sequential. If this is not the case for your files, you may need
+#                     to find the locations of macro variables `dx_first' and `dx_last'
+#                     to update the list to match your data using individual variable names
+#                     or other methods appropriate for your data. (as tested, non-sequential
+#					  diagnosis variables have not been an issue, but will at least cause inefficiency)
+#
+################################################################################
+end-header*/
+clear
+
+cd "~" /* set WD to root */
+
+/*****************************************************************************/
+/* START - USERS MUST UPDATE */
+/*****************************************************************************/
+* Update the paths to fit your file setup;
+local output_folder "/sc/cmsdata/drugsAD/Pepper Longitudinal 2012-2016/2012/Output 2012" /* update with location of you want data stored to */
+local medicare_folder "/sc/cmsdata/drugsAD/Pepper Longitudinal 2012-2016/2012/Raw Data 2012" /* update with location of medicare data */
+
+
+* Update the following macro variables to fit your file;
+* Use UPPER CASE for variable names;
+local claim_file_name = "outpatient_base_claims.dta"
+local rev_file_name = "outpatient_revenue_center.dta"
+local data_year = 2012 /* Used in File Names - See "Output files" above */
+local claim_begin_date = "CLM_FROM_DT" /* If necessary, update with the variable name of the claim from/admission date */
+local claim_thru_date = "CLM_THRU_DT" /* If necessary, update with the variable name of the claim thru/discharge date */
+local dx_prncpal = "PRNCPAL_DGNS_CD" /* If necessary, update with the variable name of the ADMITTING diagnosis code in your data */
+local dx_first = "ICD_DGNS_CD1" /* If necessary, update with the variable name of the FIRST diagnosis code in your data */
+local dx_last = "ICD_DGNS_CD25" /* If necessary, update with the variable name of the LAST diagnosis code in your data */
+local clm_query_code = "CLAIM_QUERY_CODE" /* if necessary, updated with variable name of the Claim Query Code */
+local claim_id = "CLM_ID" /* If necesscary, update with variable name of the Claim ID in the revenue and Claim files */
+local provider_num = "PRVDR_NUM" /* If necessary, update with the variable name of the Provider Number in your data */
+local claim_fac_type_code = "CLM_FAC_TYPE_CD" /* If necessary, update with the variable name of the Claim Facility Type Code in your data */
+local claim_srvc_class_code = "CLM_SRVC_CLSFCTN_TYPE_CD" /* If necessary, update with the variable name of the Claim Service Classification Type Code in your data */
+local rev_cntr_code = "REV_CNTR" /* If necessary, update with the variable name of the Revenue Center Code in your data */
+local revenue_date = "REV_CNTR_DT" /* If necessary, update with the variable name of the Revenue Center Date */
+
+/*****************************************************************************/
+/* END - USERS MUST UPDATE */
+/*****************************************************************************/
+
+local DemDx "F0150 F0151 F0280 F0281 F0390 F0391 G300 G301 G308 G309 G3101 G3109 G3183 F04 G311 G312 R4181 G310 G3184 F067 2900 2901 29010 29011 29012 29013 2902 29020 29021 2903 2904 29040 29041 29042 29043 2941 29410 29411 2942 29420 29421 331 3310 33111 33119 33182 2908 2940 3312 3317 3318 33189 797"
+
+* import the Revenue file
+local vars_to_keep	BENE_ID `claim_id' `claim_id' `revenue_date' `rev_cntr_code'
+
+cd "`medicare_folder'"
+use `rev_file_name', clear
+keep `vars_to_keep'
+
+sort BENE_ID `claim_id'
+
+tempfile revenue
+save `revenue'
+
+
+* import the line file
+local vars_to_keep 	BENE_ID `claim_id' `clm_query_code' `claim_begin_date' `claim_thru_date' `dx_prncpal' `dx_first'-`dx_last' `provider_num' `claim_fac_type_code' `claim_srvc_class_code'
+
+
+use `claim_file_name', clear
+keep `vars_to_keep'
+keep if `clm_query_code' == "3"
+
+
+sort BENE_ID `claim_id' 
+
+merge 1:m BENE_ID `claim_id' using `revenue'
+
+
+generate RHC_FQHC = 0
+	replace RHC_FQHC = 1 if (`claim_fac_type_code'=="7" & inlist(`claim_srvc_class_code', "1", "3") & inrange(`rev_cntr_code', "0510", "0529"))
+
+generate CAH_Opt2 = 0
+	replace CAH_Opt2 = 1 if (substr(`provider_num', 3, 2)=="13" & `rev_cntr_code'=="0960")
+	
+
+
+tabulate RHC_FQHC CAH_Opt2, missing
+
+drop if (RHC_FQHC==0 & CAH_Opt2==0)
+
+
+codebook, compact
+list in 1/10, clean
+
+
+* Generate standard variables 
+generate SERVICE_DT = `claim_begin_date'
+	replace SERVICE_DT = `revenue_date' if `claim_begin_date' ==.
+format SERVICE_DT %td
+label variable SERVICE_DT "Date of ADRD Dx claim"
+
+generate SERVICE_THRU_DT = `claim_thru_date'
+	replace SERVICE_THRU_DT = SERVICE_DT if `claim_thru_date' ==.
+format SERVICE_THRU_DT %td
+label variable SERVICE_THRU_DT "Thru date of ADRD Dx claim"
+
+generate DX = ""
+label variable DX "ADRD ICD9/10 Dx"
+
+generate ADRD_DX = 0
+label variable ADRD_DX "Presence of ADRD diagnosis. 1/0"
+
+
+* Generate new diagnosis variables to ensure similar vaming conventions
+local orig_dx_vars `dx_admit' `dx_first'-`dx_last'
+
+local i = 0
+
+foreach v of varlist `orig_dx_vars' {
+	generate NEW_ICD_DGNS_CD`i' = `v'
+	local i = `i' + 1
+}
+
+
+
+* loop through codes across all newly created variables
+foreach var of varlist NEW_ICD_DGNS_CD* {
+	foreach icd_code in `DemDx' {
+		quietly replace ADRD_DX = 1 if `var' == "`icd_code'"
+	}
+}
+
+
+
+* clean up data - only keep if observations with at least one ADRD diagnosis
+* remove any duplicates
+sort BENE_ID SERVICE_DT SERVICE_THRU_DT ADRD_DX
+quietly by BENE_ID SERVICE_DT SERVICE_THRU_DT ADRD_DX:  gen dup = cond(_N==1,0,_n)
+tabulate dup
+drop if dup > 1
+
+
+display "benes BEFORE dropping those without ADRD"
+codebook BENE_ID
+tabulate ADRD_DX
+
+keep if ADRD_DX==1
+
+display "benes AFTER dropping those without ADRD"
+codebook BENE_ID
+
+drop `claim_begin_date' `claim_thru_date' `orig_dx_vars' `revenue_date' `line_prcsg_ind_cd' `line_alowd_chrg_amt' dup 
+
+
+* Reshape to get all ADRD diagnosis codes 
+reshape long NEW_ICD_DGNS_CD, i(BENE_ID SERVICE_DT SERVICE_THRU_DT) j(DX_NUM)
+
+replace ADRD_DX = 0 /* re-initialize so we can just capture relevant codes this time */
+
+foreach icd_code in `DemDx'{
+	replace ADRD_DX = 1 if NEW_ICD_DGNS_CD == "`icd_code'"
+	replace DX = NEW_ICD_DGNS_CD if NEW_ICD_DGNS_CD == "`icd_code'"
+}
+
+
+* Check numbers
+display "benes and observations BEFORE dropping those without ADRD"
+codebook BENE_ID
+
+keep if ADRD_DX==1 /* keep only dx codes indicating ADRD */
+
+display "benes and observations AFTER dropping those without ADRD"
+codebook BENE_ID
+
+
+sort BENE_ID SERVICE_DT SERVICE_THRU_DT DX
+quietly by BENE_ID SERVICE_DT SERVICE_THRU_DT DX :  gen dup = cond(_N==1,0,_n)
+tabulate dup
+drop if dup > 1
+
+display "benes and observations AFTER dropping duplicates"
+codebook BENE_ID
+
+tab1 ADRD_DX DX
+
+keep BENE_ID SERVICE_DT SERVICE_THRU_DT ADRD_DX DX
+
+codebook, compact
+
+cd "`output_folder'"
+save "diag_adrd_hof_`data_year'.dta", replace
+
+codebook
+list in 1/10
+tabulate DX
+
+/* Collapse to Service Date level */
+gen ONE = 1
+collapse (count) NUM_ADRD_DX=ONE, by(BENE_ID SERVICE_DT SERVICE_THRU_DT ADRD_DX)
+
+label variable NUM_ADRD_DX "Total ADRD Dx. by Service Date"
+
+display "benes and observations AFTER collapsing on visit"
+codebook BENE_ID
+
+tabulate ADRD_DX, missing
+summarize NUM_ADRD_DX
+
+
+save "servdt_adrd_hof_`data_year'.dta", replace
+
+codebook, compact
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+H="step 3"
+/*start-header
+################################################################################
+#
+# Purpose           : Get Hospice file (Hospice) ADRD claims for a single 
+#                     year of data using Julie Bynum definitions
+#
+# Input files       : Single year of Hospice CLAIMS Data (.sas7bdat format; not including the Revenue Center File)
+#
+# Output files      : diag_adrd_Hospice_&year    : Beneficiary-Diagnosis level file with all ADRD Dx. codes found in claims
+#                     servdt_adrd_Hospice_&year  : Beneficiary-Service Date level file derived from diag_adrd_Hospice_&year
+#                     bene_adrd_Hospice_&year    : Beneficiary-level file derived from servdt_adrd_Hospice_&year
+#
+# Notes             : Update below local variables as necessary
+#
+#                     Program assumes that the diagnosis variables (often ICD_DGNS_CD1 -- ICD_DGNS_CD25)
+#                     are sequential. If this is not the case for your files, you may need
+#                     to find the locations of macro variables &dx_first and &dx_last
+#                     to update the list to match your data using individual variable names
+#                     or other methods appropriate for your data. (as tested, non-sequential
+#					  diagnosis variables have not been an issue, but will at least cause inefficiency)
+#
+#                     Program assumes that the Claim Query Code is a STRING variable. 
+#                     If your program differs, edit line 63 with the appropriate data type
+#
+################################################################################
+end-header*/
+clear
+
+cd "~" /* set WD to root */
+
+/*****************************************************************************/
+/* START - USERS MUST UPDATE */
+/*****************************************************************************/
+* Update the paths to fit your file setup;
+local output_folder "/sc/cmsdata/drugsAD/Pepper Longitudinal 2012-2016/2012/Output 2012" /* update with location of you want data stored to */
+local medicare_folder "/sc/cmsdata/drugsAD/Pepper Longitudinal 2012-2016/2012/Raw Data 2012" /* update with location of medicare data */
+
+
+* Update the following macro variables to fit your file;
+* Use UPPER CASE for variable names;
+local file_name = "hospice_base_claims.dta" /* update with name of data file (include .sas7bdat extention) */
+local data_year = "2012" /* Used in File Names - See "Output files" above */
+local claim_begin_date = "CLM_FROM_DT" /* If necessary, update with the variable name of the cliam from/admission date */
+local claim_thru_date = "CLM_THRU_DT" /* If necessary, update with the variable name of the claim thru/discharge date */
+local dx_first = "ICD_DGNS_CD1" /* If necessary, update with the variable name of the FIRST diagnosis code in your data */
+local dx_last = "ICD_DGNS_CD25" /* If necessary, update with the variable name of the LAST diagnosis code in your data */
+local clm_query_code = "CLAIM_QUERY_CODE" /* if necessary, updated with variable name of the Claim Query Code */
+
+/*****************************************************************************/
+/* END - USERS MUST UPDATE */
+/*****************************************************************************/
+
+local DemDx "F0150 F0151 F0280 F0281 F0390 F0391 G300 G301 G308 G309 G3101 G3109 G3183 F04 G311 G312 R4181 G310 G3184 F067 2900 2901 29010 29011 29012 29013 2902 29020 29021 2903 2904 29040 29041 29042 29043 2941 29410 29411 2942 29420 29421 331 3310 33111 33119 33182 2908 2940 3312 3317 3318 33189 797"
+
+
+* import data file
+local vars_to_keep 	BENE_ID  `claim_begin_date' `claim_thru_date' `dx_first'-`dx_last' `clm_query_code'
+
+
+cd "`medicare_folder'"
+use `file_name', clear
+keep `vars_to_keep'
+keep if `clm_query_code' == "3"
+
+codebook, compact
+list in 1/10, clean
+
+
+* Generate standard variables 
+generate SERVICE_DT = `claim_begin_date'
+format SERVICE_DT %td
+label variable SERVICE_DT "Date of ADRD Dx claim"
+
+generate SERVICE_THRU_DT = `claim_thru_date'
+format SERVICE_THRU_DT %td
+label variable SERVICE_THRU_DT "Thru date of ADRD Dx claim"
+
+generate DX = ""
+label variable DX "ADRD ICD9/10 Dx"
+
+generate ADRD_DX = 0
+label variable ADRD_DX "Presence of ADRD diagnosis. 1/0"
+
+
+* Generate new diagnosis variables to ensure similar vaming conventions
+local orig_dx_vars `dx_first'-`dx_last'
+
+local i = 1
+
+display `i'
+foreach v of varlist `orig_dx_vars' {
+	generate NEW_ICD_DGNS_CD`i' = `v'
+	local i = `i' + 1
+	display `i'
+}
+
+
+* loop through codes across all newly created variables
+foreach var of varlist NEW_ICD_DGNS_CD* {
+	foreach icd_code in `DemDx' {
+		quietly replace ADRD_DX = 1 if `var' == "`icd_code'"
+	}
+}
+
+
+
+* clean up data - only keep if observations with at least one ADRD diagnosis
+* remove any duplicates
+sort BENE_ID SERVICE_DT SERVICE_THRU_DT ADRD_DX
+quietly by BENE_ID SERVICE_DT SERVICE_THRU_DT ADRD_DX:  gen dup = cond(_N==1,0,_n)
+tabulate dup
+drop if dup > 1
+
+
+display "benes BEFORE dropping those without ADRD"
+codebook BENE_ID
+tabulate ADRD_DX
+
+keep if ADRD_DX==1
+
+display "benes AFTER dropping those without ADRD"
+codebook BENE_ID
+
+drop `claim_begin_date' `claim_thru_date' `orig_dx_vars' dup 
+
+
+* Reshape to get all ADRD diagnosis codes 
+reshape long NEW_ICD_DGNS_CD, i(BENE_ID SERVICE_DT SERVICE_THRU_DT) j(DX_NUM)
+
+replace ADRD_DX = 0 /* re-initialize so we can just capture relevant codes this time */
+
+foreach icd_code in `DemDx'{
+	replace ADRD_DX = 1 if NEW_ICD_DGNS_CD == "`icd_code'"
+	replace DX = NEW_ICD_DGNS_CD if NEW_ICD_DGNS_CD == "`icd_code'"
+}
+
+
+* Check numbers
+display "benes and observations BEFORE dropping those without ADRD"
+codebook BENE_ID
+
+keep if ADRD_DX==1 /* keep only dx codes indicating ADRD */
+
+display "benes and observations AFTER dropping those without ADRD"
+codebook BENE_ID
+
+
+sort BENE_ID SERVICE_DT SERVICE_THRU_DT DX
+quietly by BENE_ID SERVICE_DT SERVICE_THRU_DT DX :  gen dup = cond(_N==1,0,_n)
+tabulate dup
+drop if dup > 1
+
+display "benes and observations AFTER dropping duplicates"
+codebook BENE_ID
+
+tab1 ADRD_DX DX
+
+drop NEW_ICD_DGNS_CD DX_NUM dup
+
+codebook, compact
+
+cd "`output_folder'"
+save "diag_adrd_hospice_`data_year'.dta", replace
+
+codebook
+list in 1/10
+tabulate DX
+
+/* Collapse to Service Date level */
+gen ONE = 1
+collapse (count) NUM_ADRD_DX=ONE, by(BENE_ID SERVICE_DT SERVICE_THRU_DT ADRD_DX)
+
+label variable NUM_ADRD_DX "Total ADRD Dx. by Service Date"
+
+display "benes and observations AFTER collapsing on visit"
+codebook BENE_ID
+
+tabulate ADRD_DX, missing
+summarize NUM_ADRD_DX
+
+
+save "servdt_adrd_hospice_`data_year'.dta", replace
+
+codebook, compact
+
+
+
+/* Collapse to Beneficiary-level */
+collapse (count) HOSPICE_ADRD_CLMS=NUM_ADRD_DX, by(BENE_ID ADRD_DX)
+
+generate HOSPICE_ADRD_DX = ADRD_DX
+
+label variable HOSPICE_ADRD_CLMS "Total number of ADRD claims by bene_id in Hospice"
+label variable HOSPICE_ADRD_DX "In Hospice, presence of ADRD diagnosis. 1/0"
+
+tab1 ADRD_DX HOSPICE_ADRD_DX HOSPICE_ADRD_CLMS
+
+save "bene_adrd_hospice_`data_year'.dta", replace
+
+codebook, compact
+
+
+
+
+
+
+
+
+
+
+
+
+H="step 4"
+/*start-header
+################################################################################
+#
+# Purpose           : Get MedPAR ADRD claims for a single year of data using Julie Bynum definitions
+#
+# Input files       : Single year of MedPAR data (.sas7bdat format)
+#
+# Output files      : diag_adrd_medpar_&year    : Beneficiary-Diagnosis level file with all ADRD Dx. codes found in claims
+#                     servdt_adrd_medpar_&year  : Beneficiary-Service Date level file derived from diag_adrd_medpar_&year
+#                     bene_adrd_medpar_&year    : Beneficiary-level file derived from servdt_adrd_medpar_&year
+#
+# Notes             : Update below local variables as necessary
+#
+#                     Program assumes that the diagnosis variables (often ICD_DGNS_CD1 - ICD_DGNS_CD25)
+#                     are sequential. If this is not the case for your files, you may need
+#                     to find the locations of macro variables `dx_first' and `dx_last'
+#                     to update the list to match your data using individual variable names
+#                     or other methods appropriate for your data. (as tested, non-sequential
+#					  diagnosis variables have not been an issue, but will at least cause inefficiency)
+#
+################################################################################
+end-header*/
+clear
+
+cd "~" /* set WD to root */
+
+/*****************************************************************************/
+/* START - USERS MUST UPDATE */
+/*****************************************************************************/
+* Update the paths to fit your file setup;
+local output_folder "/sc/cmsdata/drugsAD/Pepper Longitudinal 2012-2016/2012/Output 2012" /* update with location of you want data stored to */
+local medicare_folder "/sc/cmsdata/drugsAD/Pepper Longitudinal 2012-2016/2012/Raw Data 2012" /* update with location of medicare data */
+
+
+* Update the following macro variables to fit your file;
+* Use UPPER CASE for variable names;
+local file_name = "medpar_all_file.dta" /* update with name of data file (include .sas7bdat extention) */
+local data_year = "2012" /* Used in File Names - See "Output files" above */
+local admit_date = "ADMSN_DT" /* If necessary, update with the variable name of the admission date */
+local discharge_date = "DSCHRG_DT" /* If necessary, update with the variable name of the discharge date */
+local dx_admit = "ADMTG_DGNS_CD" /* If necessary, update with the variable name of the ADMITTING diagnosis code in your data */
+local dx_first = "DGNS_1_CD" /* If necessary, update with the variable name of the FIRST diagnosis code in your data */
+local dx_last = "DGNS_25_CD" /* If necessary, update with the variable name of the LAST diagnosis code in your data */
+
+/*****************************************************************************/
+/* END - USERS MUST UPDATE */
+/*****************************************************************************/
+
+local DemDx "F0150 F0151 F0280 F0281 F0390 F0391 G300 G301 G308 G309 G3101 G3109 G3183 F04 G311 G312 R4181 G310 G3184 F067 2900 2901 29010 29011 29012 29013 2902 29020 29021 2903 2904 29040 29041 29042 29043 2941 29410 29411 2942 29420 29421 331 3310 33111 33119 33182 2908 2940 3312 3317 3318 33189 797"
+
+
+* import data file
+local vars_to_keep 	BENE_ID  `admit_date' `discharge_date' `dx_admit' `dx_first'-`dx_last'
+
+
+cd "`medicare_folder'"
+use `file_name', clear 
+keep `vars_to_keep'
+
+codebook, compact
+list in 1/10, clean
+
+
+* Generate standard variables 
+generate SERVICE_DT = `admit_date'
+format SERVICE_DT %td
+label variable SERVICE_DT "Date of ADRD Dx claim"
+
+generate SERVICE_THRU_DT = `discharge_date'
+format SERVICE_THRU_DT %td
+label variable SERVICE_THRU_DT "Thru date of ADRD Dx claim"
+
+generate DX = ""
+label variable DX "ADRD ICD9/10 Dx"
+
+generate ADRD_DX = 0
+label variable ADRD_DX "Presence of ADRD diagnosis. 1/0"
+
+
+* Generate new diagnosis variables to ensure similar vaming conventions
+local orig_dx_vars `dx_admit' `dx_first'-`dx_last'
+
+local i = 0
+
+foreach v of varlist `orig_dx_vars' {
+	generate NEW_ICD_DGNS_CD`i' = `v'
+	local i = `i' + 1
+}
+
+
+* loop through codes across all newly created variables
+foreach var of varlist NEW_ICD_DGNS_CD* {
+	foreach icd_code in `DemDx' {
+		quietly replace ADRD_DX = 1 if `var' == "`icd_code'"
+	}
+}
+
+
+
+* clean up data - only keep if observations with at least one ADRD diagnosis
+* remove any duplicates
+sort BENE_ID SERVICE_DT SERVICE_THRU_DT ADRD_DX
+quietly by BENE_ID SERVICE_DT SERVICE_THRU_DT ADRD_DX:  gen dup = cond(_N==1,0,_n)
+tabulate dup
+drop if dup > 1
+
+
+display "benes BEFORE dropping those without ADRD"
+codebook BENE_ID
+tabulate ADRD_DX
+
+keep if ADRD_DX==1
+
+display "benes AFTER dropping those without ADRD"
+codebook BENE_ID
+
+drop `admit_date' `discharge_date' `orig_dx_vars' dup 
+
+
+* Reshape to get all ADRD diagnosis codes 
+reshape long NEW_ICD_DGNS_CD, i(BENE_ID SERVICE_DT SERVICE_THRU_DT) j(DX_NUM)
+
+replace ADRD_DX = 0 /* re-initialize so we can just capture relevant codes this time */
+
+foreach icd_code in `DemDx'{
+	replace ADRD_DX = 1 if NEW_ICD_DGNS_CD == "`icd_code'"
+	replace DX = NEW_ICD_DGNS_CD if NEW_ICD_DGNS_CD == "`icd_code'"
+}
+
+
+* Check numbers
+display "benes and observations BEFORE dropping those without ADRD"
+codebook BENE_ID
+
+keep if ADRD_DX==1 /* keep only dx codes indicating ADRD */
+
+display "benes and observations AFTER dropping those without ADRD"
+codebook BENE_ID
+
+
+sort BENE_ID SERVICE_DT SERVICE_THRU_DT DX
+quietly by BENE_ID SERVICE_DT SERVICE_THRU_DT DX :  gen dup = cond(_N==1,0,_n)
+tabulate dup
+drop if dup > 1
+
+display "benes and observations AFTER dropping duplicates"
+codebook BENE_ID
+
+tab1 ADRD_DX DX
+
+drop NEW_ICD_DGNS_CD DX_NUM dup
+
+codebook, compact
+
+cd "`output_folder'"
+save "diag_adrd_medpar_`data_year'.dta", replace
+
+codebook
+list in 1/10
+tabulate DX
+
+/* Collapse to Service Date level */
+gen ONE = 1
+collapse (count) NUM_ADRD_DX=ONE, by(BENE_ID SERVICE_DT SERVICE_THRU_DT ADRD_DX)
+
+label variable NUM_ADRD_DX "Total ADRD Dx. by Service Date"
+
+display "benes and observations AFTER collapsing on visit"
+codebook BENE_ID
+
+tabulate ADRD_DX, missing
+summarize NUM_ADRD_DX
+
+
+save "servdt_adrd_medpar_`data_year'.dta", replace
+
+codebook, compact
+
+
+
+/* Collapse to Beneficiary-level */
+collapse (count) MEDPAR_ADRD_CLMS=NUM_ADRD_DX, by(BENE_ID ADRD_DX)
+
+generate MEDPAR_ADRD_DX = ADRD_DX
+
+label variable MEDPAR_ADRD_CLMS "Total number of ADRD claims by bene_id in MedPAR"
+label variable MEDPAR_ADRD_DX "In MedPAR, presence of ADRD diagnosis. 1/0"
+
+tab1 ADRD_DX MEDPAR_ADRD_DX MEDPAR_ADRD_CLMS
+
+save "bene_adrd_medpar_`data_year'.dta", replace
+
+codebook, compact
+
+
+
+
+
+
+
+
+
+
+
+
+H="step 5"
+/*start-header
+################################################################################
+#
+# Purpose           : Get CARRIER ADRD claims for a single year of data using Julie Bynum definitions
+#
+# Input files       : Single year of CARRIER data (.sas7bdat format; both Line and Claims files)
+#
+# Output files      : diag_adrd_carrier_&year    : Beneficiary-Diagnosis level file with all ADRD Dx. codes found in claims
+#                     servdt_adrd_carrier_&year  : Beneficiary-Service Date level file derived from diag_adrd_carrier_&year
+#
+# Notes             : Update below local variables as necessary
+#
+#                     Program assumes that the diagnosis variables (often ICD_DGNS_CD1 - ICD_DGNS_CD12)
+#                     are sequential. If this is not the case for your files, you may need
+#                     to find the locations of macro variables `dx_first' and `dx_last'
+#                     to update the list to match your data using individual variable names
+#                     or other methods appropriate for your data. (as tested, non-sequential
+#					  diagnosis variables have not been an issue, but will at least cause inefficiency)
+#
+################################################################################
+end-header*/
+clear
+
+cd "~" /* set WD to root */
+
+/*****************************************************************************/
+/* START - USERS MUST UPDATE */
+/*****************************************************************************/
+* Update the paths to fit your file setup;
+local output_folder "/sc/cmsdata/drugsAD/Pepper Longitudinal 2012-2016/2012/Output 2012"  /* Update with location where files from previous step are saved */
+
+
+* Update the following macro variables to fit your file;
+local HOF_file_name = "servdt_adrd_hof_2012.dta" /* Name of the HOF Claim file */
+local Carrier_file_name = "servdt_adrd_carrier_2012.dta" /* Name of the HOF Revenue Center file */
+local data_year = 2012 /* Used in File Names - See "Output files" above */
+
+/*****************************************************************************/
+/* END - USERS MUST UPDATE */
+/*****************************************************************************/
+
+cd "`output_folder'"
+
+use "servdt_adrd_hof_2012.dta", clear
+append using  "servdt_adrd_carrier_2012.dta"
+
+sort BENE_ID SERVICE_DT SERVICE_THRU_DT
+
+display "benes and observations BEFORE collapsing on visit"
+codebook BENE_ID
+
+
+/* Collapse to Beneficiary level */
+gen one_placeholder = 1
+collapse (count) HOF_CARRIER_ADRD_CLMS=one_placeholder (min) MIN_SERVICE_DT=SERVICE_DT (max) MAX_SERVICE_DT=SERVICE_DT, by(BENE_ID ADRD_DX)
+
+display "benes and observations AFTER collapsing on visit"
+codebook BENE_ID
+
+generate TIME_BETWEEN_DX = (MAX_SERVICE_DT - MIN_SERVICE_DT)
+generate GE7 = 0 
+	replace GE7=1 if TIME_BETWEEN_DX >= 7 & TIME_BETWEEN_DX != .
+
+sort GE7	
+
+bysort GE7: summarize TIME_BETWEEN_DX
+	
+keep if GE7==1
+
+drop GE7 MIN_SERVICE_DT MAX_SERVICE_DT TIME_BETWEEN_DX
+
+
+* final cleanup
+generate HOF_CARRIER_ADRD_DX = ADRD_DX
+
+label variable HOF_CARRIER_ADRD_CLMS "Total number of ADRD claims by bene_id in HOF/CARRIER"
+label variable HOF_CARRIER_ADRD_DX "In HOF/CARRIER, presence of ADRD diagnosis. 1/0"
+
+tab1 ADRD_DX HOF_CARRIER_ADRD_DX HOF_CARRIER_ADRD_CLMS
+
+save "bene_adrd_HOF_Carrier_`data_year'.dta", replace
+
+codebook, compact
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+H="step 6"
+/*start-header
+################################################################################
+#
+# Purpose           : Combine Hospital Outpatient File (HOF) Service-Date-Level ADRD claims 
+#                     with Carrier File Serive-Date-Level ADRD claims to produce beneficiary-level file
+#                     that includes only those with 2+ claims that are 7+ days apart
+#
+# Input files       : bene_adrd_HOF_Carrier_`year' (output from 2_ADRD_Carrier_HOF_Bene_Level) 
+#                     bene_adrd_MedPAR_`year' (output from 1_ADRD_MedPAR_Claims)
+#                     bene_adrd_HHA_`year' (output from 1_ADRD_HHA_Claims)
+#                     bene_adrd_Hospice_`year' (output from 1_ADRD_Hospice_Claims)
+#
+# Output files      : bene_ADRD_all_sources_&year.
+#
+# Notes             : Update below local variables as necessary
+#
+################################################################################
+end-header*/
+
+
+/*****************************************************************************/
+/* START - USERS MUST UPDATE */
+/*****************************************************************************/
+* Update the paths to fit your file setup;
+local output_folder "/sc/cmsdata/drugsAD/Pepper Longitudinal 2012-2016/2012/Output 2012"  /* Update with location where files from previous step are saved */
+
+* Update the following macro variables to fit your file;
+local HOF_Carrier_file_name = "bene_adrd_HOF_Carrier_2012.dta" /* Name of the HOF/Carrier Bene-level file */
+local MedPAR_file_name = "bene_adrd_medpar_2012.dta" /* Name of the MedPAR Bene-level file */
+local Hospice_file_name = "bene_adrd_hospice_2012.dta" /* Name of the Hospice Bene-level file */
+local data_year = 2012 /* Used in File Names - See "Output files" above */
+
+
+/*****************************************************************************/
+/* END - USERS MUST UPDATE */
+/*****************************************************************************/
+
+cd "`output_folder'"
+use `HOF_Carrier_file_name', clear
+merge 1:1 BENE_ID using `MedPAR_file_name'
+	drop _merge
+
+merge 1:1 BENE_ID using `Hospice_file_name'
+	drop _merge
+	
+replace MEDPAR_ADRD_DX = 0 if MEDPAR_ADRD_DX == .
+replace MEDPAR_ADRD_CLMS = 0 if MEDPAR_ADRD_CLMS == .
+
+replace HOSPICE_ADRD_DX = 0 if HOSPICE_ADRD_DX == .
+replace HOSPICE_ADRD_CLMS = 0 if HOSPICE_ADRD_CLMS == .
+
+replace HOF_CARRIER_ADRD_DX = 0 if HOF_CARRIER_ADRD_DX == .
+replace HOF_CARRIER_ADRD_CLMS = 0 if HOF_CARRIER_ADRD_CLMS == .
+
+ 
+tab1 MEDPAR_ADRD_DX MEDPAR_ADRD_CLMS HOSPICE_ADRD_DX HOSPICE_ADRD_CLMS HOF_CARRIER_ADRD_DX HOF_CARRIER_ADRD_CLMS, missing
+
+codebook
+
+save "bene_ADRD_all_sources_`data_year'.dta", replace
+
+H="************"
+
+
+H="merge all to final data "
+
+//use ADRD outcome, merge to covariates 
+use "/sc/cmsdata/drugsAD/Pepper Longitudinal 2012-2016/2012/Output 2012/bene_ADRD_all_sources_2012",clear
+rename *,lower
+merge 1:m bene_id using "/sc/cmsdata/drugsAD/Pepper Longitudinal 2012-2016/2012/Int Data 2012/covariates.dta"
+drop _merge 
+
+//merge to phenothiazines
+merge 1:m bene_id using "/sc/cmsdata/drugsAD/Pepper Longitudinal 2012-2016/2012/Int Data 2012/phenothiazines.dta"
+drop _merge 
+
+merge 1:m bene_id using "/sc/cmsdata/drugsAD/Pepper Longitudinal 2012-2016/2012/Int Data 2012/pde_anti_inflammatory_drug.dta",force
+drop if _merge==2
+drop _merge
+
+merge m:1 bene_id using "/sc/cmsdata/drugsAD/Pepper Longitudinal 2012-2016/2012/Int Data 2012/demo_data.dta"
+
+drop _merge
+
+recode adrd_dx (.=0)
+
+recode hypertension diabetes stroke heart depressive tbi smoking psychosis2 rheumatoid_arthritis (.=0)
+
+recode non_selec_nsaids cox2_selec_nsaids corticosteroids anti_theumatic targeted_dmard other_drug inf_drug ant_tnf anti_inflammatory_drug (.=0)
+
+recode ever_phenothiazines CPZ PCPZ TriHyd AmiHyd PFZ Flup ProHyd NorHyd (.=0)
+
+gen everdrug= (non_selec_nsaids==1 | cox2_selec_nsaids==1 | corticosteroids==1 | anti_theumatic==1 | targeted_dmard==1 | other_drug==1 | inf_drug==1 | ant_tnf==1 | anti_inflammatory_drug==1)
+tab everdrug
+
+//recode tri race 
+tab rti_race_cd
+gen race_recode=rti_race_cd
+destring race_recode,replace
+recode race_recode (0=4)(1=1)(2=2)(3=4)(4=4)(5=3)(6=4)
+label define race_recode 1 "non-Hispanic White" 2 "non-Hispanic Black" 3 "Hispanic" 4 "Others"
+label values race_recode race_recode
+
+//exclude snf stay less than 100 days 
+tab snf_lessthan100
+drop if snf_lessthan100==1
+
+//sample size 
+destring sex_ident_cd,replace
+
+sum age_at_end_ref_yr race_recode sex_ident_cd hypertension diabetes stroke heart depressive tbi smoking psychosis2 rheumatoid_arthritis
+
+sum non_selec_nsaids cox2_selec_nsaids corticosteroids anti_theumatic targeted_dmard other_drug inf_drug ant_tnf anti_inflammatory_drug
+
+save "/sc/cmsdata/drugsAD/Pepper Longitudinal 2012-2016/final data 5 yrs/yr 2012 working data.dta",replace 

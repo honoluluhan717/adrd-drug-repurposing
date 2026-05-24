@@ -1,0 +1,329 @@
+// ======================================
+// All-years comorbidity flags
+// ======================================
+
+clear all
+set more off
+
+global root "/sc/cmsdata/drugsAD/Pepper Longitudinal 2012-2016"
+
+foreach yr in 2012 2013 2014 2015 2016 {
+
+    // Per-year paths
+    local datapath "$root/`yr'/Raw Data `yr'"
+    local intpath  "$root/`yr'/Int Data `yr'"
+    local outpath  "$root/`yr'/Raw Data `yr'/Output/in_progress"
+
+    display as text "======== Processing year `yr' ========"
+
+    // ensure Int path exists (ignore if no permission)
+    capture noisily mkdir "`intpath'"
+
+    //=============================//
+    //       Carrier Claims        //
+    //=============================//
+    display as text "Carrier..."
+    confirm file "`datapath'/bcarrier_claims.dta"
+    use "`datapath'/bcarrier_claims.dta", clear
+    rename *, lower
+    keep bene_id icd_dgns_cd*
+
+    generate byte hypertension = 0
+    generate byte diabetes = 0
+    generate byte stroke = 0
+    generate byte heart = 0
+    generate byte depressive = 0
+    generate byte traumatic_brain_injury = 0
+    generate byte smoking = 0
+    generate byte psychosis2 = 0
+    generate byte rheumatoid_arthritis = 0
+
+    forvalues i = 1/12 {
+        local dx icd_dgns_cd`i'
+
+        // --- Hypertension ---
+        replace hypertension = 1 if inlist(substr(`dx',1,3), "I10","I15")
+        replace hypertension = 1 if inlist(substr(`dx',1,4), "4010","4011","4019")
+        replace hypertension = 1 if inlist(substr(`dx',1,5), "40501","40509","40511","40519","40591","40599")
+
+        // --- Diabetes ---
+        replace diabetes = 1 if inlist(substr(`dx',1,3), "E10","E11","E13")
+        replace diabetes = 1 if inlist(substr(`dx',1,5), "24900","24910","24920","24930","24940","24950","24960","24970")
+        replace diabetes = 1 if inlist(substr(`dx',1,5), "24980","24990","25000","25001","25010","25011","25020","25030")
+        replace diabetes = 1 if inlist(substr(`dx',1,5), "25031","25040","25041","25050","25051","25060","25061","25070")
+        replace diabetes = 1 if inlist(substr(`dx',1,5), "25071","25080","25081","25090","25091","36201","36202")
+        replace diabetes = 1 if inlist(substr(`dx',1,5), "36204","36205","36206","36207","36641")
+        replace diabetes = 1 if inlist(substr(`dx',1,4), "3572")
+
+        // --- Stroke ---
+        replace stroke = 1 if inlist(substr(`dx',1,3), "I63")
+        replace stroke = 1 if inlist(substr(`dx',1,5), "43301","43311","43321","43331","43381","43391","43401","43411")
+        replace stroke = 1 if inlist(substr(`dx',1,5), "43491")
+
+        // --- Heart ---
+        replace heart = 1 if inlist(substr(`dx',1,3), "I25","I11","412")
+        replace heart = 1 if inlist(substr(`dx',1,4), "4020","4021","4029","4111","4139","4142","4143","4144")
+        replace heart = 1 if inlist(substr(`dx',1,4), "4148","4149","4292")
+        replace heart = 1 if inlist(substr(`dx',1,5), "40200","40201","40210","40211","40290","40291","41401","41402")
+        replace heart = 1 if inlist(substr(`dx',1,5), "41403","41404","41405","41406","41407","41410","41411","41412")
+        replace heart = 1 if inlist(substr(`dx',1,5), "41419")
+
+        // --- Depression ---
+        replace depressive = 1 if inlist(substr(`dx',1,3), "F32","F33","311")
+        replace depressive = 1 if inlist(substr(`dx',1,5), "29620","29621","29622","29623","29624","29625","29626","29630")
+        replace depressive = 1 if inlist(substr(`dx',1,5), "29631","29632","29633","29634","29635","29636","29682","29699")
+        replace depressive = 1 if inlist(substr(`dx',1,4), "2980")
+
+        // --- Traumatic Brain Injury (TBI) ---
+        replace traumatic_brain_injury = 1 if inlist(substr(`dx',1,3),"800","801","802","803","804","S02","S06","S07")
+        replace traumatic_brain_injury = 1 if inlist(substr(`dx',1,3), "850","851","852","853","854")
+        replace traumatic_brain_injury = 1 if inlist(substr(`dx',1,4),"9050","9070","9251")
+        replace traumatic_brain_injury = 1 if inlist(substr(`dx',1,5),"V1552","V5889","V8001")
+        replace traumatic_brain_injury = 1 if inlist(substr(`dx',1,5),"S0190")
+        replace traumatic_brain_injury = 1 if inlist(substr(`dx',1,6),"Z13850","Z87820")
+
+        // --- Smoking ---
+        replace smoking = 1 if inlist(substr(`dx',1,3), "F17","Z72","Z77")
+        replace smoking = 1 if inlist(substr(`dx',1,4), "2920","2929","3051","V690","V691","V692","V693","V694")
+        replace smoking = 1 if inlist(substr(`dx',1,4), "V698","V699","V872")
+        replace smoking = 1 if inlist(substr(`dx',1,5), "29289","V7101","V7102","V1584","V1586","V1589","V8701","V8702")
+        replace smoking = 1 if inlist(substr(`dx',1,5), "V8709","V8711","V8712","V8719","V8731","V8732","V8739")
+
+        // --- Psychosis ---
+        replace psychosis2 = 1 if inlist(substr(`dx',1,3), "F20","F21","F22","F23","F24","F25","F26","F27")
+        replace psychosis2 = 1 if inlist(substr(`dx',1,3), "F28","F29")
+        replace psychosis2 = 1 if inlist(substr(`dx',1,4), "2970","2971","2972","2973","2978","2979","2958","2959")
+        replace psychosis2 = 1 if inlist(substr(`dx',1,4), "2950","2951","2952","2953","2954","2955","2956","2957")
+        replace psychosis2 = 1 if inlist(substr(`dx',1,5), "30122")
+
+        // --- Rheumatoid Arthritis ---
+        replace rheumatoid_arthritis = 1 if inlist(substr(`dx',1,3), "M05","M06")
+        replace rheumatoid_arthritis = 1 if inlist(substr(`dx',1,4), "M061","3571","3596","7140","7141","7142","7149")
+        replace rheumatoid_arthritis = 1 if inlist(substr(`dx',1,5), "71481","71489")
+    }
+
+    // add year stamp before saving this source file
+    generate int year = `yr'
+    keep bene_id year hypertension diabetes stroke heart depressive traumatic_brain_injury smoking psychosis2 rheumatoid_arthritis
+    order bene_id year
+    save "`intpath'/comorbidities_carrier.dta", replace
+
+    //=============================//
+    //  Hospice and Outpatient     //
+    //=============================//
+    foreach src in hospice outpatient {
+        display as text "`src'..."
+        confirm file "`datapath'/`src'_base_claims.dta"
+        use "`datapath'/`src'_base_claims.dta", clear
+        rename *, lower
+        keep bene_id icd_dgns_cd*
+
+        generate byte hypertension = 0
+        generate byte diabetes = 0
+        generate byte stroke = 0
+        generate byte heart = 0
+        generate byte depressive = 0
+        generate byte traumatic_brain_injury = 0
+        generate byte smoking = 0
+        generate byte psychosis2 = 0
+        generate byte rheumatoid_arthritis = 0
+
+        forvalues i = 1/12 {
+            local dx icd_dgns_cd`i'
+
+            // --- Hypertension ---
+            replace hypertension = 1 if inlist(substr(`dx',1,3), "I10","I15")
+            replace hypertension = 1 if inlist(substr(`dx',1,4), "4010","4011","4019")
+            replace hypertension = 1 if inlist(substr(`dx',1,5), "40501","40509","40511","40519","40591","40599")
+
+            // --- Diabetes ---
+            replace diabetes = 1 if inlist(substr(`dx',1,3), "E10","E11","E13")
+            replace diabetes = 1 if inlist(substr(`dx',1,5), "24900","24910","24920","24930","24940","24950","24960","24970")
+            replace diabetes = 1 if inlist(substr(`dx',1,5), "24980","24990","25000","25001","25010","25011","25020","25030")
+            replace diabetes = 1 if inlist(substr(`dx',1,5), "25031","25040","25041","25050","25051","25060","25061","25070")
+            replace diabetes = 1 if inlist(substr(`dx',1,5), "25071","25080","25081","25090","25091","36201","36202")
+            replace diabetes = 1 if inlist(substr(`dx',1,5), "36204","36205","36206","36207","36641")
+            replace diabetes = 1 if inlist(substr(`dx',1,4), "3572")
+
+            // --- Stroke ---
+            replace stroke = 1 if inlist(substr(`dx',1,3), "I63")
+            replace stroke = 1 if inlist(substr(`dx',1,5), "43301","43311","43321","43331","43381","43391","43401","43411")
+            replace stroke = 1 if inlist(substr(`dx',1,5), "43491")
+
+            // --- Heart ---
+            replace heart = 1 if inlist(substr(`dx',1,3), "I25","I11","412")
+            replace heart = 1 if inlist(substr(`dx',1,4), "4020","4021","4029","4111","4139","4142","4143","4144")
+            replace heart = 1 if inlist(substr(`dx',1,4), "4148","4149","4292")
+            replace heart = 1 if inlist(substr(`dx',1,5), "40200","40201","40210","40211","40290","40291","41401","41402")
+            replace heart = 1 if inlist(substr(`dx',1,5), "41403","41404","41405","41406","41407","41410","41411","41412")
+            replace heart = 1 if inlist(substr(`dx',1,5), "41419")
+
+            // --- Depression ---
+            replace depressive = 1 if inlist(substr(`dx',1,3), "F32","F33","311")
+            replace depressive = 1 if inlist(substr(`dx',1,5), "29620","29621","29622","29623","29624","29625","29626","29630")
+            replace depressive = 1 if inlist(substr(`dx',1,5), "29631","29632","29633","29634","29635","29636","29682","29699")
+            replace depressive = 1 if inlist(substr(`dx',1,4), "2980")
+
+            // --- Traumatic Brain Injury (TBI) ---
+            replace traumatic_brain_injury = 1 if inlist(substr(`dx',1,3),"800","801","802","803","804","S02","S06","S07")
+            replace traumatic_brain_injury = 1 if inlist(substr(`dx',1,3), "850","851","852","853","854")
+            replace traumatic_brain_injury = 1 if inlist(substr(`dx',1,4),"9050","9070","9251")
+            replace traumatic_brain_injury = 1 if inlist(substr(`dx',1,5),"V1552","V5889","V8001")
+            replace traumatic_brain_injury = 1 if inlist(substr(`dx',1,5),"S0190")
+            replace traumatic_brain_injury = 1 if inlist(substr(`dx',1,6),"Z13850","Z87820")
+
+            // --- Smoking ---
+            replace smoking = 1 if inlist(substr(`dx',1,3), "F17","Z72","Z77")
+            replace smoking = 1 if inlist(substr(`dx',1,4), "2920","2929","3051","V690","V691","V692","V693","V694")
+            replace smoking = 1 if inlist(substr(`dx',1,4), "V698","V699","V872")
+            replace smoking = 1 if inlist(substr(`dx',1,5), "29289","V7101","V7102","V1584","V1586","V1589","V8701","V8702")
+            replace smoking = 1 if inlist(substr(`dx',1,5), "V8709","V8711","V8712","V8719","V8731","V8732","V8739")
+
+            // --- Psychosis ---
+            replace psychosis2 = 1 if inlist(substr(`dx',1,3), "F20","F21","F22","F23","F24","F25","F26","F27")
+            replace psychosis2 = 1 if inlist(substr(`dx',1,3), "F28","F29")
+            replace psychosis2 = 1 if inlist(substr(`dx',1,4), "2970","2971","2972","2973","2978","2979","2958","2959")
+            replace psychosis2 = 1 if inlist(substr(`dx',1,4), "2950","2951","2952","2953","2954","2955","2956","2957")
+            replace psychosis2 = 1 if inlist(substr(`dx',1,5), "30122")
+
+            // --- Rheumatoid Arthritis ---
+            replace rheumatoid_arthritis = 1 if inlist(substr(`dx',1,3), "M05","M06")
+            replace rheumatoid_arthritis = 1 if inlist(substr(`dx',1,4), "M061","3571","3596","7140","7141","7142","7149")
+            replace rheumatoid_arthritis = 1 if inlist(substr(`dx',1,5), "71481","71489")
+        }
+
+        // add year stamp before saving this source file
+        generate int year = `yr'
+        keep bene_id year hypertension diabetes stroke heart depressive traumatic_brain_injury smoking psychosis2 rheumatoid_arthritis
+        order bene_id year
+        save "`intpath'/comorbidities_`src'.dta", replace
+    }
+
+    //=============================//
+    //           MedPAR            //
+    //=============================//
+    display as text "MedPAR..."
+    confirm file "`datapath'/medpar_all_file.dta"
+    use "`datapath'/medpar_all_file.dta", clear
+    rename *, lower
+    keep bene_id dgns_*_cd
+
+    generate byte hypertension = 0
+    generate byte diabetes = 0
+    generate byte stroke = 0
+    generate byte heart = 0
+    generate byte depressive = 0
+    generate byte traumatic_brain_injury = 0
+    generate byte smoking = 0
+    generate byte psychosis2 = 0
+    generate byte rheumatoid_arthritis = 0
+
+    forvalues i = 1/12 {
+        local dx dgns_`i'_cd
+
+        // --- Hypertension ---
+        replace hypertension = 1 if inlist(substr(`dx',1,3), "I10","I15")
+        replace hypertension = 1 if inlist(substr(`dx',1,4), "4010","4011","4019")
+        replace hypertension = 1 if inlist(substr(`dx',1,5), "40501","40509","40511","40519","40591","40599")
+
+        // --- Diabetes ---
+        replace diabetes = 1 if inlist(substr(`dx',1,3), "E10","E11","E13")
+        replace diabetes = 1 if inlist(substr(`dx',1,5), "24900","24910","24920","24930","24940","24950","24960","24970")
+        replace diabetes = 1 if inlist(substr(`dx',1,5), "24980","24990","25000","25001","25010","25011","25020","25030")
+        replace diabetes = 1 if inlist(substr(`dx',1,5), "25031","25040","25041","25050","25051","25060","25061","25070")
+        replace diabetes = 1 if inlist(substr(`dx',1,5), "25071","25080","25081","25090","25091","36201","36202")
+        replace diabetes = 1 if inlist(substr(`dx',1,5), "36204","36205","36206","36207","36641")
+        replace diabetes = 1 if inlist(substr(`dx',1,4), "3572")
+
+        // --- Stroke ---
+        replace stroke = 1 if inlist(substr(`dx',1,3), "I63")
+        replace stroke = 1 if inlist(substr(`dx',1,5), "43301","43311","43321","43331","43381","43391","43401","43411")
+        replace stroke = 1 if inlist(substr(`dx',1,5), "43491")
+
+        // --- Heart ---
+        replace heart = 1 if inlist(substr(`dx',1,3), "I25","I11","412")
+        replace heart = 1 if inlist(substr(`dx',1,4), "4020","4021","4029","4111","4139","4142","4143","4144")
+        replace heart = 1 if inlist(substr(`dx',1,4), "4148","4149","4292")
+        replace heart = 1 if inlist(substr(`dx',1,5), "40200","40201","40210","40211","40290","40291","41401","41402")
+        replace heart = 1 if inlist(substr(`dx',1,5), "41403","41404","41405","41406","41407","41410","41411","41412")
+        replace heart = 1 if inlist(substr(`dx',1,5), "41419")
+
+        // --- Depression ---
+        replace depressive = 1 if inlist(substr(`dx',1,3), "F32","F33","311")
+        replace depressive = 1 if inlist(substr(`dx',1,5), "29620","29621","29622","29623","29624","29625","29626","29630")
+        replace depressive = 1 if inlist(substr(`dx',1,5), "29631","29632","29633","29634","29635","29636","29682","29699")
+        replace depressive = 1 if inlist(substr(`dx',1,4), "2980")
+
+        // --- Traumatic Brain Injury (TBI) ---
+        replace traumatic_brain_injury = 1 if inlist(substr(`dx',1,3),"800","801","802","803","804","S02","S06","S07")
+        replace traumatic_brain_injury = 1 if inlist(substr(`dx',1,3), "850","851","852","853","854")
+        replace traumatic_brain_injury = 1 if inlist(substr(`dx',1,4),"9050","9070","9251")
+        replace traumatic_brain_injury = 1 if inlist(substr(`dx',1,5),"V1552","V5889","V8001")
+        replace traumatic_brain_injury = 1 if inlist(substr(`dx',1,5),"S0190")
+        replace traumatic_brain_injury = 1 if inlist(substr(`dx',1,6),"Z13850","Z87820")
+
+        // --- Smoking ---
+        replace smoking = 1 if inlist(substr(`dx',1,3), "F17","Z72","Z77")
+        replace smoking = 1 if inlist(substr(`dx',1,4), "2920","2929","3051","V690","V691","V692","V693","V694")
+        replace smoking = 1 if inlist(substr(`dx',1,4), "V698","V699","V872")
+        replace smoking = 1 if inlist(substr(`dx',1,5), "29289","V7101","V7102","V1584","V1586","V1589","V8701","V8702")
+        replace smoking = 1 if inlist(substr(`dx',1,5), "V8709","V8711","V8712","V8719","V8731","V8732","V8739")
+
+        // --- Psychosis ---
+        replace psychosis2 = 1 if inlist(substr(`dx',1,3), "F20","F21","F22","F23","F24","F25","F26","F27")
+        replace psychosis2 = 1 if inlist(substr(`dx',1,3), "F28","F29")
+        replace psychosis2 = 1 if inlist(substr(`dx',1,4), "2970","2971","2972","2973","2978","2979","2958","2959")
+        replace psychosis2 = 1 if inlist(substr(`dx',1,4), "2950","2951","2952","2953","2954","2955","2956","2957")
+        replace psychosis2 = 1 if inlist(substr(`dx',1,5), "30122")
+
+        // --- Rheumatoid Arthritis ---
+        replace rheumatoid_arthritis = 1 if inlist(substr(`dx',1,3), "M05","M06")
+        replace rheumatoid_arthritis = 1 if inlist(substr(`dx',1,4), "M061","3571","3596","7140","7141","7142","7149")
+        replace rheumatoid_arthritis = 1 if inlist(substr(`dx',1,5), "71481","71489")
+    }
+
+    // add year stamp before saving this source file
+    generate int year = `yr'
+    keep bene_id year hypertension diabetes stroke heart depressive traumatic_brain_injury smoking psychosis2 rheumatoid_arthritis
+    order bene_id year
+    save "`intpath'/comorbidities_medpar.dta", replace
+
+    //=============================//
+    //       Merge All Files       //
+    //=============================//
+    display as text "Merging and collapsing..."
+    use "`intpath'/comorbidities_carrier.dta", clear
+    append using "`intpath'/comorbidities_hospice.dta"
+    append using "`intpath'/comorbidities_outpatient.dta"
+    append using "`intpath'/comorbidities_medpar.dta"
+
+    // Collapse flags to one row per bene_id within year
+    sort bene_id year
+    foreach v in hypertension diabetes stroke heart depressive traumatic_brain_injury smoking psychosis2 rheumatoid_arthritis {
+        by bene_id year: egen __max = max(`v')
+        replace `v' = __max
+        drop __max
+    }
+
+    // keep one row per bene_id-year
+    duplicates drop bene_id year, force
+
+    order bene_id year
+    save "`intpath'/comorbidities_all5.dta", replace
+    display as result "Saved: `intpath'/comorbidities_all5.dta"
+}
+
+
+use "//sc/cmsdata/drugsAD/Pepper Longitudinal 2012-2016/2016/Int Data 2016/comorbidities_all5.dta",clear 
+append using "/sc/cmsdata/drugsAD/Pepper Longitudinal 2012-2016/2015/Int Data 2015/comorbidities_all5.dta"
+append using "/sc/cmsdata/drugsAD/Pepper Longitudinal 2012-2016/2014/Int Data 2014/comorbidities_all5.dta"
+append using "/sc/cmsdata/drugsAD/Pepper Longitudinal 2012-2016/2013/Int Data 2013/comorbidities_all5.dta"
+append using "/sc/cmsdata/drugsAD/Pepper Longitudinal 2012-2016/2012/Int Data 2012/comorbidities_all5.dta"
+
+save "/sc/cmsdata/drugsAD/Pepper Longitudinal 2012-2016/final data 5 yrs/all 5 years final data.dta",replace 
+
+tab year 
+
+foreach x in hypertension diabetes stroke heart depressive traumatic_brain_injury smoking psychosis2 rheumatoid_arthritis {
+	tab `x' year,col
+}

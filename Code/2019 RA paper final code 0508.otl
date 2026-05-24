@@ -1,0 +1,616 @@
+= V4 Outline MultiLine NoSorting TabWidth=30
+
+H="set file path "
+
+global medi "J:\Geriatrics\Litke_CMS\2019\Raw Data"
+
+
+//Intermediate Data Path
+global intpath  "J:\Geriatrics\Litke_CMS\2019\Int Data"
+
+// Final Data Path
+global datapath  "J:\Geriatrics\Litke_CMS\2019\Raw Data"
+
+//Log files path
+global outpath  "J:\Geriatrics\Litke_CMS\2019\Raw Data\Output\in_progress"
+
+
+H="get CPZ"
+import sas using "J:\Geriatrics\Litke_CMS\2019\Raw Data\pde_char\pde_file.sas7bdat",clear
+rename*,lower
+
+gen ndc=substr(prod_srvc_id, 1, strlen(prod_srvc_id)-2)
+
+//1. Chlorpromazine - CPZ
+
+gen CPZ=ustrpos(gnn, "CHLORPROMAZINE")
+
+tostring CPZ,replace
+
+keep if CPZ=="1"
+
+duplicates report ndc
+bysort ndc: keep if _n==1
+
+keep ndc
+rename ndc CPZ
+
+export delimited using "J:\Geriatrics\Litke_CMS\2019\Final Data\NDC Part D\CPZ_newpde.csv",replace
+
+H="get PCPZ"
+import sas using "J:\Geriatrics\Litke_CMS\2019\Raw Data\pde_char\pde_file.sas7bdat",clear
+rename*,lower
+
+gen ndc=substr(prod_srvc_id, 1, strlen(prod_srvc_id)-2)
+
+//2. Prochlorperazine -PCPZ
+
+gen PCPZ=ustrpos(gnn, "PROCHLORPERAZINE")
+
+tostring PCPZ,replace
+
+keep if PCPZ=="1"
+
+duplicates report ndc
+bysort ndc: keep if _n==1
+
+keep ndc
+rename ndc PCPZ
+
+export delimited using "J:\Geriatrics\Litke_CMS\2019\Final Data\NDC Part D\PCPZ_newpde.csv",replace
+
+H="get TriHyd"
+import sas using "J:\Geriatrics\Litke_CMS\2019\Raw Data\pde_char\pde_file.sas7bdat",clear
+rename*,lower
+
+gen ndc=substr(prod_srvc_id, 1, strlen(prod_srvc_id)-2)
+
+//3. Trifluoperazine - TriHyd
+
+gen TriHyd=ustrpos(gnn, "TRIFLUOPERAZINE")
+
+tostring TriHyd,replace
+
+keep if TriHyd=="1"
+
+duplicates report ndc
+bysort ndc: keep if _n==1
+
+keep ndc
+rename ndc TriHyd
+
+export delimited using "J:\Geriatrics\Litke_CMS\2019\Final Data\NDC Part D\TriHyd_newpde.csv",replace
+
+H="get AmiHyd"
+import sas using "J:\Geriatrics\Litke_CMS\2019\Raw Data\pde_char\pde_file.sas7bdat",clear
+rename*,lower
+
+gen ndc=substr(prod_srvc_id, 1, strlen(prod_srvc_id)-2)
+
+//4. Amitriptyline - AmiHyd
+
+gen AmiHyd=ustrpos(gnn, "AMITRIPTYLINE")
+
+tostring AmiHyd,replace
+
+keep if AmiHyd=="1"
+
+duplicates report ndc
+bysort ndc: keep if _n==1
+
+keep ndc
+rename ndc AmiHyd
+
+export delimited using "J:\Geriatrics\Litke_CMS\2019\Final Data\NDC Part D\AmiHyd_newpde.csv",replace
+
+H="get PFZ"
+import sas using "J:\Geriatrics\Litke_CMS\2019\Raw Data\pde_char\pde_file.sas7bdat",clear
+rename*,lower
+
+gen ndc=substr(prod_srvc_id, 1, strlen(prod_srvc_id)-2)
+
+//5. Perphenazine – PFZ
+
+gen PFZ=ustrpos(gnn, "PERPHENAZINE")
+
+tostring PFZ,replace
+
+keep if PFZ=="1"
+
+duplicates report ndc
+bysort ndc: keep if _n==1
+
+keep ndc
+rename ndc PFZ
+
+export delimited using "J:\Geriatrics\Litke_CMS\2019\Final Data\NDC Part D\PFZ_newpde.csv",replace
+
+H="get Flup"
+import sas using "J:\Geriatrics\Litke_CMS\2019\Raw Data\pde_char\pde_file.sas7bdat",clear
+rename*,lower
+
+gen ndc=substr(prod_srvc_id, 1, strlen(prod_srvc_id)-2)
+
+//6. Fluphenazine - Flup
+
+gen Flup=ustrpos(gnn, "FLUPHENAZINE")
+
+tostring Flup,replace
+
+keep if Flup=="1"
+
+duplicates report ndc
+bysort ndc: keep if _n==1
+
+keep ndc
+rename ndc Flup
+
+export delimited using "J:\Geriatrics\Litke_CMS\2019\Final Data\NDC Part D\Flup_newpde.csv",replace
+
+H="get ProHyd"
+import sas using "J:\Geriatrics\Litke_CMS\2019\Raw Data\pde_char\pde_file.sas7bdat",clear
+rename*,lower
+
+gen ndc=substr(prod_srvc_id, 1, strlen(prod_srvc_id)-2)
+
+//7. Promethazine - ProHyd
+
+gen ProHyd=ustrpos(gnn, "PROMETHAZINE")
+
+tostring ProHyd,replace
+
+keep if ProHyd=="1"
+
+duplicates report ndc
+bysort ndc: keep if _n==1
+
+keep ndc
+rename ndc ProHyd
+
+export delimited using "J:\Geriatrics\Litke_CMS\2019\Final Data\NDC Part D\ProHyd_newpde.csv",replace
+
+H="get NorHyd"
+import sas using "J:\Geriatrics\Litke_CMS\2019\Raw Data\pde_char\pde_file.sas7bdat",clear
+rename*,lower
+
+gen ndc=substr(prod_srvc_id, 1, strlen(prod_srvc_id)-2)
+
+//8. NORTRIPTYLINE
+gen NorHyd=ustrpos(gnn, "NORTRIPTYLINE")
+
+tostring NorHyd,replace
+
+keep if NorHyd=="1"
+
+duplicates report ndc
+bysort ndc: keep if _n==1
+
+keep ndc
+rename ndc NorHyd
+
+export delimited using "J:\Geriatrics\Litke_CMS\2019\Final Data\NDC Part D\NorHyd_newpde.csv",replace
+
+H="***********"
+
+
+H="get age race sex from mbsf"
+use "J:\Geriatrics\Litke_CMS\2019\Int Data\mbsf_abcd\mbsf_claims.dta", clear
+
+keep bene_id age_at_end_ref_yr rti_race_cd sex_ident_cd 
+
+keep if age_at_end_ref_yr>66 | age_at_end_ref_yr==66
+
+save "${intpath}/demo_data.dta",replace 
+
+
+H="create drug names from part d"
+import sas using "J:\Geriatrics\Litke_CMS\2019\Raw Data\pde_char\pde_file.sas7bdat",clear
+rename*,lower
+keep bene_id prod_srvc_id gnn
+
+gen ndc=substr(prod_srvc_id, 1, strlen(prod_srvc_id)-2)
+
+gen CPZ=ustrpos(gnn, "CHLORPROMAZINE")
+gen PCPZ=ustrpos(gnn, "PROCHLORPERAZINE")
+gen TriHyd=ustrpos(gnn, "TRIFLUOPERAZINE")
+gen AmiHyd=ustrpos(gnn, "AMITRIPTYLINE")
+recode AmiHyd (14=1)
+gen PFZ=ustrpos(gnn, "PERPHENAZINE")
+gen Flup=ustrpos(gnn, "FLUPHENAZINE")
+gen ProHyd=ustrpos(gnn, "PROMETHAZINE")
+gen NorHyd=ustrpos(gnn, "NORTRIPTYLINE")
+
+gen drug_name=.
+replace drug_name = 1 if CPZ==1
+replace drug_name = 2 if PCPZ==1
+replace drug_name = 3 if TriHyd==1
+replace drug_name = 4 if AmiHyd==1
+replace drug_name = 5 if PFZ==1
+replace drug_name = 6 if Flup==1
+replace drug_name = 7 if ProHyd==1 
+replace drug_name = 8 if NorHyd==1 
+
+gen anti_inflam=ustrpos(gnn, "DICLOFENAC") | ustrpos(gnn, "DIFLUNISAL") | ustrpos(gnn, "ETODOLAC") | ustrpos(gnn, "FENOPROFEN") | ustrpos(gnn, "FLURBIPROFEN") | ustrpos(gnn, "IBUPROFEN") | ustrpos(gnn, "INDOMETHACIN") | ustrpos(gnn, "KETOPROFEN") | ustrpos(gnn, "KETOROLAC") | ustrpos(gnn, "MEFENAMIC ACID") | ustrpos(gnn, "MELOXICAM") | ustrpos(gnn, "NABUMETONE") | ustrpos(gnn, "NAPROXEN") | ustrpos(gnn, "OXAPROZIN") | ustrpos(gnn, "PIROXICAM") | ustrpos(gnn, "SULINDAC") | ustrpos(gnn, "TOLMETIN") | ustrpos(gnn, "CELECOXIB") | ustrpos(gnn, "BUDESONIDE") | ustrpos(gnn, "BECLOMETHASONE") | ustrpos(gnn, "BETAMETHASONE") | ustrpos(gnn, "CELESTONE") | ustrpos(gnn, "CUTIVAT") | ustrpos(gnn, "DECADRON") | ustrpos(gnn, "DELTASONE") | ustrpos(gnn, "DEPO-MEDROL") | ustrpos(gnn, "DEXAMETHASONE") | ustrpos(gnn, "DIPROLENE") | ustrpos(gnn, "DIPROSONE") | ustrpos(gnn, "ENTOCORT EC") | ustrpos(gnn, "FLONASE") | ustrpos(gnn, "FLOVENT") | ustrpos(gnn, "FLUDROCORTISONE") | ustrpos(gnn, "KENALOG") | ustrpos(gnn, "MEDROL") | ustrpos(gnn, "MEGACE") | ustrpos(gnn, "MEGESTROL ACETATE") | ustrpos(gnn, "METHYLPREDNISOLONE") | ustrpos(gnn, "ORASONE") | ustrpos(gnn, "PREDNISOLONE") | ustrpos(gnn, "PREDNISONE") | ustrpos(gnn, "RHINOCORT") | ustrpos(gnn, "SOLU-MEDROL OR SOLUMEDROL") | ustrpos(gnn, "TRIAMCINOLONE ACETONIDE") | ustrpos(gnn, "PULMICOR") | ustrpos(gnn, "SULFASALAZINE") | ustrpos(gnn, "MESALAZINE") | ustrpos(gnn, "LEFLUNOMIDE") | ustrpos(gnn, "APREMILAST") | ustrpos(gnn, "ABATACEPT") | ustrpos(gnn, "BIMEKIZUMAB") | ustrpos(gnn, "IXEKIZUMAB") | ustrpos(gnn, "RITUXIMAB") | ustrpos(gnn, "TOCILIZUMAB") | ustrpos(gnn, "SARILUMAB") | ustrpos(gnn, "ANAKINRA") | ustrpos(gnn, "USTEKINUMAB") | ustrpos(gnn, "SECUKINUMAB") | ustrpos(gnn, "BELIMUMAB") | ustrpos(gnn, "LEFLUNOMIDE") | ustrpos(gnn, "GUSELKUMAB") | ustrpos(gnn, "RIZANKIZUMAB") | ustrpos(gnn, "MEGACE") | ustrpos(gnn, "MEGESTROL ACETATE") | ustrpos(gnn, "METHYLPREDNISOLONE") | ustrpos(gnn, "ORASONE") | ustrpos(gnn, "PREDNISOLONE") | ustrpos(gnn, "TILDRAKIZUMAB") | ustrpos(gnn, "DUPILUMAB") |ustrpos(gnn, "JAK 1/2/3 INHIBITOR") | ustrpos(gnn, "TOFACITINIB") | ustrpos(gnn, "CICLOSPORIN") | ustrpos(gnn, "CYCLOSPORIN") | ustrpos(gnn, "AZATHIOPRINE") | ustrpos(gnn, "TACROLIMUS") | ustrpos(gnn, "SIROLIMUS") | ustrpos(gnn, "PEGINTERFERON") | ustrpos(gnn, "INTERFERON BETA") | ustrpos(gnn, "ADALIMUMAB") | ustrpos(gnn, "CERTOLIZUMAB") | ustrpos(gnn, "ETANERCEPT") | ustrpos(gnn, "GOLIMUMAB") | ustrpos(gnn, "INFLIXIMAB") | ustrpos(gnn, "ANTI INTEGRIN ?4?7") | ustrpos(gnn, "VEDOLIZUMAB") 
+
+drop if drug_name==.
+drop gnn prod_srvc_id ndc
+
+duplicates report bene_id drug_name
+return list 
+
+foreach x in CPZ PCPZ TriHyd AmiHyd PFZ Flup ProHyd NorHyd {
+	by bene_id,sort:egen a=max(`x')
+    	replace `x'=a
+	drop a
+}
+
+drop drug_name
+duplicates drop
+
+egen everdrug=rowmax(CPZ PCPZ TriHyd AmiHyd PFZ Flup ProHyd NorHyd)
+egen countdrug=rowtotal(CPZ PCPZ TriHyd AmiHyd PFZ Flup ProHyd NorHyd)
+
+save "${intpath}/partd8drugs.dta", replace 
+
+
+
+H="get covariates"
+//append and merge all medicare data
+//carrier
+use "${datapath}/carrier_claims/carrier_claims.dta", clear 
+	rename *,lower
+	keep bene_id icd_dgns_cd*
+	gen hypertension=0
+	gen diabetes=0
+	gen stroke=0
+	gen heart=0
+	gen depressive=0
+	gen tbi=0
+	gen smoking=0
+	gen psychosis2=0
+	gen rheumatoid_arthritis=0
+	
+		forvalues i=1/12 {
+			replace hypertension=1 if inlist(substr(icd_dgns_cd`i',1,3),"I10") 
+			replace diabetes=1 if inlist(substr(icd_dgns_cd`i',1,3),"E10") | inlist(substr(icd_dgns_cd`i',1,3),"E11") 
+			replace stroke=1 if inlist(substr(icd_dgns_cd`i',1,3),"I63") 
+			replace heart=1 if inlist(substr(icd_dgns_cd`i',1,3),"I25") | inlist(substr(icd_dgns_cd`i',1,3),"I11") 
+			replace depressive=1 if inlist(substr(icd_dgns_cd`i',1,3),"F32") | inlist(substr(icd_dgns_cd`i',1,3),"F33") 
+			replace tbi=1 if inlist(substr(icd_dgns_cd`i',1,3),"S02") | inlist(substr(icd_dgns_cd`i',1,3),"S06") | inlist(substr(icd_dgns_cd`i',1,3),"S07") 
+			replace smoking=1 if inlist(substr(icd_dgns_cd`i',1,3),"F17") | icd_dgns_cd`i'=="Z77"
+			replace psychosis2=1 if inlist(substr(icd_dgns_cd`i',1,3),"F20") | inlist(substr(icd_dgns_cd`i',1,3),"F21") | inlist(substr(icd_dgns_cd`i',1,3),"F22") | inlist(substr(icd_dgns_cd`i',1,3),"F23") | inlist(substr(icd_dgns_cd`i',1,3),"F24")
+			replace psychosis2=1 if inlist(substr(icd_dgns_cd`i',1,3),"F25") | inlist(substr(icd_dgns_cd`i',1,3),"F26") | inlist(substr(icd_dgns_cd`i',1,3),"F27") | inlist(substr(icd_dgns_cd`i',1,3),"F28") | inlist(substr(icd_dgns_cd`i',1,3),"F29") | inlist(substr(icd_dgns_cd`i',1,3),"F30") 
+			replace rheumatoid_arthritis=1 if inlist(substr(icd_dgns_cd`i',1,3),"M05") | inlist(substr(icd_dgns_cd`i',1,3),"M06") & !inlist(substr(icd_dgns_cd`i',1,3),"M061")
+		}
+
+keep bene_id hypertension diabetes stroke heart depressive tbi smoking psychosis2 rheumatoid_arthritis
+save "${intpath}/comorbidities_carrier.dta",replace
+
+
+//hospice, outpatient 
+foreach x in hospice outpt {
+	use "${datapath}/`x'_claims/`x'_claims.dta", clear 
+	
+	rename *,lower
+	keep bene_id icd_dgns_cd*
+	gen hypertension=0
+	gen diabetes=0
+	gen stroke=0
+	gen heart=0
+	gen depressive=0
+	gen tbi=0
+	gen smoking=0
+	gen psychosis2=0
+	gen rheumatoid_arthritis=0
+
+		forvalues i=1/25 {
+			replace hypertension=1 if inlist(substr(icd_dgns_cd`i',1,3),"I10") 
+			replace diabetes=1 if inlist(substr(icd_dgns_cd`i',1,3),"E10") | inlist(substr(icd_dgns_cd`i',1,3),"E11") 
+			replace stroke=1 if inlist(substr(icd_dgns_cd`i',1,3),"I63") 
+			replace heart=1 if inlist(substr(icd_dgns_cd`i',1,3),"I25") | inlist(substr(icd_dgns_cd`i',1,3),"I11") 
+			replace depressive=1 if inlist(substr(icd_dgns_cd`i',1,3),"F32") | inlist(substr(icd_dgns_cd`i',1,3),"F33") 
+			replace tbi=1 if inlist(substr(icd_dgns_cd`i',1,3),"S02") | inlist(substr(icd_dgns_cd`i',1,3),"S06") | inlist(substr(icd_dgns_cd`i',1,3),"S07") 
+			replace smoking=1 if inlist(substr(icd_dgns_cd`i',1,3),"F17") | inlist(substr(icd_dgns_cd`i',1,3),"Z77") 
+			replace psychosis2=1 if inlist(substr(icd_dgns_cd`i',1,3),"F20") | inlist(substr(icd_dgns_cd`i',1,3),"F21") | inlist(substr(icd_dgns_cd`i',1,3),"F22")| inlist(substr(icd_dgns_cd`i',1,3),"F23") | inlist(substr(icd_dgns_cd`i',1,3),"F24") | inlist(substr(icd_dgns_cd`i',1,3),"F25")
+			replace psychosis2=1 if	inlist(substr(icd_dgns_cd`i',1,3),"F26") | inlist(substr(icd_dgns_cd`i',1,3),"F27") | inlist(substr(icd_dgns_cd`i',1,3),"F28") | inlist(substr(icd_dgns_cd`i',1,3),"F29") | inlist(substr(icd_dgns_cd`i',1,3),"F30") 
+			replace rheumatoid_arthritis=1 if inlist(substr(icd_dgns_cd`i',1,3),"M05") | inlist(substr(icd_dgns_cd`i',1,3),"M06") & !inlist(substr(icd_dgns_cd`i',1,3),"M061")
+		}
+
+keep bene_id hypertension diabetes stroke heart depressive tbi smoking psychosis2 rheumatoid_arthritis
+save "${intpath}/comorbidities_`x'.dta",replace
+}
+
+
+//medpar 
+use "${datapath}/medpar/medpar_claims.dta", clear 
+rename *,lower
+keep bene_id dgns_*_cd
+drop dgns_e_* dgns_poa_cd
+
+gen hypertension=0
+gen diabetes=0
+gen stroke=0
+gen heart=0
+gen depressive=0
+gen tbi=0
+gen smoking=0
+gen psychosis2=0
+gen rheumatoid_arthritis=0
+
+forvalues i=1/25 {
+	replace hypertension=1 if inlist(substr(dgns_`i'_cd,1,3),"I10") 
+			replace diabetes=1 if inlist(substr(dgns_`i' _cd,1,3),"E10") | inlist(substr(dgns_`i'_cd,1,3),"E11") 
+			replace stroke=1 if inlist(substr(dgns_`i'_cd,1,3),"I63") 
+			replace heart=1 if inlist(substr(dgns_`i'_cd,1,3),"I25") | inlist(substr(dgns_`i'_cd,1,3),"I11") 
+			replace depressive=1 if inlist(substr(dgns_`i'_cd,1,3),"F32") | inlist(substr(dgns_`i'_cd,1,3),"F33") 
+			replace tbi=1 if inlist(substr(dgns_`i'_cd,1,3),"S02") | inlist(substr(dgns_`i'_cd,1,3),"S06") | inlist(substr(dgns_`i'_cd,1,3),"S07") 
+			replace smoking=1 if inlist(substr(dgns_`i'_cd,1,3),"F17") | inlist(substr(dgns_`i'_cd,1,3),"Z77")
+			replace psychosis2=1 if inlist(substr(dgns_`i'_cd,1,3),"F20") | inlist(substr(dgns_`i'_cd,1,3),"F21") | inlist(substr(dgns_`i'_cd,1,3),"F22")| inlist(substr(dgns_`i'_cd,1,3),"F23") | inlist(substr(dgns_`i'_cd,1,3),"F24") | inlist(substr(dgns_`i'_cd,1,3),"F25")
+			replace psychosis2=1 if	inlist(substr(dgns_`i'_cd,1,3),"F26") | inlist(substr(dgns_`i'_cd,1,3),"F27") | inlist(substr(dgns_`i'_cd,1,3),"F28") | inlist(substr(dgns_`i'_cd,1,3),"F29") | inlist(substr(dgns_`i'_cd,1,3),"F30") 	
+             replace rheumatoid_arthritis=1 if inlist(substr(dgns_`i'_cd,1,3),"M05") | inlist(substr(dgns_`i'_cd,1,3),"M06") & !inlist(substr(dgns_`i'_cd,1,3),"M061")
+}
+
+keep bene_id hypertension diabetes stroke heart depressive tbi smoking psychosis2 rheumatoid_arthritis
+
+save "${intpath}/comorbidities_medpar.dta",replace
+
+//merge all data 
+use "${intpath}/comorbidities_carrier.dta",clear 
+append using "${intpath}/comorbidities_hospice.dta"
+append using "${intpath}/comorbidities_outpt.dta"
+append using "${intpath}/comorbidities_medpar.dta"
+
+//drop duplicates 
+sort bene_id
+foreach x in hypertension diabetes stroke heart depressive tbi smoking psychosis2 rheumatoid_arthritis {
+	by bene_id: egen a=max(`x')
+	replace `x'=a
+	drop a 
+}
+
+duplicates drop
+
+save "${intpath}/covariates.dta",replace 
+
+
+
+
+
+H="merge new Bynum code"
+use "${intpath}/newBynum.dta",clear
+merge 1:m bene_id using "${intpath}/covariates.dta"
+drop everdrug 
+drop if _merge==1 
+drop _merge 
+
+merge 1:m bene_id using "${intpath}/partd8drugs.dta",force
+drop if _merge==2
+drop _merge
+
+merge m:1 bene_id using "${intpath}/demo_data.dta"
+
+recode adrd_dx (.=0)
+
+recode hypertension diabetes stroke heart depressive tbi smoking psychosis2 rheumatoid_arthritis (.=0)
+recode CPZ PCPZ TriHyd AmiHyd PFZ Flup ProHyd NorHyd everdrug countdrug (.=0)
+
+//recode tri race 
+tab rti_race_cd
+gen race_recode=rti_race_cd
+destring race_recode,replace
+recode race_recode (0=4)(1=1)(2=2)(3=4)(4=4)(5=3)(6=4)
+label define race_recode 1 "non-Hispanic White" 2 "non-Hispanic Black" 3 "Hispanic" 4 "Others"
+label values race_recode race_recode
+
+//sample size 
+sum age_at_end_ref_yr race_recode sex_ident_cd hypertension diabetes stroke heart depressive tbi smoking psychosis2 rheumatoid_arthritis
+
+sum CPZ PCPZ TriHyd AmiHyd PFZ Flup ProHyd NorHyd
+
+destring sex_ident_cd,replace
+
+drop _merge
+
+drop if age==.
+
+save "${intpath}/new working data08.29.dta",replace 
+
+
+H="************"
+
+
+H="table 1-4"
+log using "J:\Geriatrics\Litke_CMS\5yr Request\Results\Yihan\final ra nalayses 051726.smcl",replace 
+
+use "${intpath}/new working data08.29.dta",clear
+
+tab everdrug
+
+tabstat age_at_end_ref_yr, by(everdrug) stat(mean sd) columns(statistics)
+
+foreach var in race_recode sex_ident_cd adrd_dx smoking diabetes hypertension stroke heart depressive psychosis2 tbi rheumatoid_arthritis { 
+	di "====================" di "`var'" 
+	tab `var' everdrug, row col 
+	}
+	
+foreach var in CPZ PCPZ TriHyd AmiHyd PFZ Flup ProHyd NorHyd everdrug countdrug {
+		tab `var'
+	}
+	
+translate "J:\Geriatrics\Litke_CMS\5yr Request\Results\Yihan\final ra nalayses 051726.smcl" "J:\Geriatrics\Litke_CMS\5yr Request\Results\Yihan\final ra nalayses 051726.pdf"
+
+log close
+
+H="table 5"
+log using "J:\Geriatrics\Litke_CMS\2019\Output\in_progress\tables5 05.18.26.smcl",replace 
+
+use "${intpath}/new working data08.29.dta",clear 
+
+
+//create RA med flag 
+//everdrug flag 
+gen ra_anydrug_flag=.
+
+replace ra_anydrug_flag=0 if rheumatoid_arthritis==0 & everdrug==0
+replace ra_anydrug_flag=1 if rheumatoid_arthritis==1 & everdrug==1
+replace ra_anydrug_flag=2 if rheumatoid_arthritis==1 & everdrug==0
+replace ra_anydrug_flag=3 if rheumatoid_arthritis==0 & everdrug==1
+
+label define ra_anydrug_flag 0 "no RA no drug" 1 "RA+drug" 2 "RA+no drug" 3 "no RA+drug" 
+label values ra_anydrug_flag ra_anydrug_flag
+
+tab ra_anydrug_flag,m
+
+//CPZ
+gen ra_CPZ_flag=.
+
+replace ra_CPZ_flag=0 if rheumatoid_arthritis==0 & CPZ!=1
+replace ra_CPZ_flag=1 if rheumatoid_arthritis==1 & CPZ==1
+replace ra_CPZ_flag=2 if rheumatoid_arthritis==1 & CPZ!=1
+replace ra_CPZ_flag=3 if rheumatoid_arthritis==0 & CPZ==1
+
+label define ra_CPZ_flag 0 "no RA no med" 1 "RA+med" 2 "RA+no med" 3 "no RA+med"
+label values ra_CPZ_flag ra_CPZ_flag
+
+tab ra_CPZ_flag,m
+
+//PCPZ
+gen ra_PCPZ_flag=.
+
+replace ra_PCPZ_flag=0 if rheumatoid_arthritis==0 & PCPZ!=1
+replace ra_PCPZ_flag=1 if rheumatoid_arthritis==1 & PCPZ==1
+replace ra_PCPZ_flag=2 if rheumatoid_arthritis==1 & PCPZ!=1
+replace ra_PCPZ_flag=3 if rheumatoid_arthritis==0 & PCPZ==1
+
+label define ra_PCPZ_flag 0 "no RA no med" 1 "RA+med" 2 "RA+no med" 3 "no RA+med"
+label values ra_PCPZ_flag ra_PCPZ_flag
+
+tab ra_PCPZ_flag,m
+
+
+//TRIHYD
+gen ra_TRIHYD_flag=.
+
+replace ra_TRIHYD_flag=0 if rheumatoid_arthritis==0 & TriHyd!=1
+replace ra_TRIHYD_flag=1 if rheumatoid_arthritis==1 & TriHyd==1
+replace ra_TRIHYD_flag=2 if rheumatoid_arthritis==1 & TriHyd!=1
+replace ra_TRIHYD_flag=3 if rheumatoid_arthritis==0 & TriHyd==1
+
+label define ra_TRIHYD_flag 0 "no RA no med" 1 "RA+med" 2 "RA+no med" 3 "no RA+med"
+label values ra_TRIHYD_flag ra_TRIHYD_flag
+
+tab ra_TRIHYD_flag,m
+
+
+//AMIHYD
+gen ra_AMIHYD_flag=.
+
+replace ra_AMIHYD_flag=0 if rheumatoid_arthritis==0 & AmiHyd!=1
+replace ra_AMIHYD_flag=1 if rheumatoid_arthritis==1 & AmiHyd==1
+replace ra_AMIHYD_flag=2 if rheumatoid_arthritis==1 & AmiHyd!=1
+replace ra_AMIHYD_flag=3 if rheumatoid_arthritis==0 & AmiHyd==1
+
+label define ra_AMIHYD_flag 0 "no RA no med" 1 "RA+med" 2 "RA+no med" 3 "no RA+med"
+label values ra_AMIHYD_flag ra_AMIHYD_flag
+
+tab ra_AMIHYD_flag,m
+
+
+//PFZ
+gen ra_PFZ_flag=.
+
+replace ra_PFZ_flag=0 if rheumatoid_arthritis==0 & PFZ!=1
+replace ra_PFZ_flag=1 if rheumatoid_arthritis==1 & PFZ==1
+replace ra_PFZ_flag=2 if rheumatoid_arthritis==1 & PFZ!=1
+replace ra_PFZ_flag=3 if rheumatoid_arthritis==0 & PFZ==1
+
+label define ra_PFZ_flag 0 "no RA no med" 1 "RA+med" 2 "RA+no med" 3 "no RA+med"
+label values ra_PFZ_flag ra_PFZ_flag
+
+tab ra_PFZ_flag,m
+
+//FLUP
+gen ra_FLUP_flag=.
+
+replace ra_FLUP_flag=0 if rheumatoid_arthritis==0 & Flup!=1
+replace ra_FLUP_flag=1 if rheumatoid_arthritis==1 & Flup==1
+replace ra_FLUP_flag=2 if rheumatoid_arthritis==1 & Flup!=1
+replace ra_FLUP_flag=3 if rheumatoid_arthritis==0 & Flup==1
+
+label define ra_FLUP_flag 0 "no RA no med" 1 "RA+med" 2 "RA+no med" 3 "no RA+med"
+label values ra_FLUP_flag ra_FLUP_flag
+
+tab ra_FLUP_flag,m
+
+
+//PROHYD
+gen ra_PROHYD_flag=. 
+
+replace ra_PROHYD_flag=0 if rheumatoid_arthritis==0 & ProHyd!=1
+replace ra_PROHYD_flag=1 if rheumatoid_arthritis==1 & ProHyd==1
+replace ra_PROHYD_flag=2 if rheumatoid_arthritis==1 & ProHyd!=1
+replace ra_PROHYD_flag=3 if rheumatoid_arthritis==0 & ProHyd==1
+
+label define ra_PROHYD_flag 0 "no RA no med" 1 "RA+med" 2 "RA+no med" 3 "no RA+med"
+label values ra_PROHYD_flag ra_PROHYD_flag
+
+tab ra_PROHYD_flag,m
+
+
+//NORHYD
+gen ra_NORHYD_flag=.
+
+replace ra_NORHYD_flag=0 if rheumatoid_arthritis==0 & NorHyd!=1
+replace ra_NORHYD_flag=1 if rheumatoid_arthritis==1 & NorHyd==1
+replace ra_NORHYD_flag=2 if rheumatoid_arthritis==1 & NorHyd!=1
+replace ra_NORHYD_flag=3 if rheumatoid_arthritis==0 & NorHyd==1
+
+label define ra_NORHYD_flag 0 "no RA no med" 1 "RA+med" 2 "RA+no med" 3 "no RA+med"
+label values ra_NORHYD_flag ra_NORHYD_flag
+
+tab ra_NORHYD_flag,m
+
+
+//bivariate 
+foreach a in ra_anydrug_flag ra_CPZ_flag ra_PCPZ_flag ra_TRIHYD_flag ra_AMIHYD_flag ra_PFZ_flag ra_FLUP_flag ra_PROHYD_flag ra_NORHYD_flag {
+	tab `a' adrd_dx,chi2
+}
+
+//multivariate 
+//model 1 only drugs 
+logistic adrd_dx i.ra_anydrug_flag,or
+logistic adrd_dx i.ra_CPZ_flag,or
+logistic adrd_dx i.ra_PCPZ_flag ,or
+logistic adrd_dx i.ra_TRIHYD_flag,or
+logistic adrd_dx i.ra_AMIHYD_flag,or
+logistic adrd_dx i.ra_PFZ_flag,or
+logistic adrd_dx i.ra_FLUP_flag,or
+logistic adrd_dx i.ra_PROHYD_flag,or
+logistic adrd_dx i.ra_NORHYD_flag,or
+
+//model 2 drug + demographics 
+logistic adrd_dx i.ra_anydrug_flag age_at_end_ref_yr i.race_recode i.sex_ident_cd,or
+logistic adrd_dx i.ra_CPZ_flag age_at_end_ref_yr i.race_recode i.sex_ident_cd,or
+logistic adrd_dx i.ra_PCPZ_flag age_at_end_ref_yr i.race_recode i.sex_ident_cd,or
+logistic adrd_dx i.ra_TRIHYD_flag age_at_end_ref_yr i.race_recode i.sex_ident_cd,or
+logistic adrd_dx i.ra_AMIHYD_flag age_at_end_ref_yr i.race_recode i.sex_ident_cd,or
+logistic adrd_dx i.ra_PFZ_flag age_at_end_ref_yr i.race_recode i.sex_ident_cd,or
+logistic adrd_dx i.ra_FLUP_flag age_at_end_ref_yr i.race_recode i.sex_ident_cd,or
+logistic adrd_dx i.ra_PROHYD_flag age_at_end_ref_yr i.race_recode i.sex_ident_cd,or
+logistic adrd_dx i.ra_NORHYD_flag age_at_end_ref_yr i.race_recode i.sex_ident_cd,or
+
+//model 3 drug + demographics + all comorbidities (no RA) 
+logistic adrd_dx i.ra_anydrug_flag age_at_end_ref_yr i.race_recode i.sex_ident_cd i.stroke i.hypertension i.diabetes i.heart i.depressive i.tbi i.smoking i.psychosis2,or
+logistic adrd_dx i.ra_CPZ_flag age_at_end_ref_yr i.race_recode i.sex_ident_cd i.stroke i.hypertension i.diabetes i.heart i.depressive i.tbi i.smoking i.psychosis2,or
+logistic adrd_dx i.ra_PCPZ_flag age_at_end_ref_yr i.race_recode i.sex_ident_cd i.stroke i.hypertension i.diabetes i.heart i.depressive i.tbi i.smoking i.psychosis2,or
+logistic adrd_dx i.ra_TRIHYD_flag age_at_end_ref_yr i.race_recode i.sex_ident_cd i.stroke i.hypertension i.diabetes i.heart i.depressive i.tbi i.smoking i.psychosis2,or
+logistic adrd_dx i.ra_AMIHYD_flag age_at_end_ref_yr i.race_recode i.sex_ident_cd i.stroke i.hypertension i.diabetes i.heart i.depressive i.tbi i.smoking i.psychosis2,or
+logistic adrd_dx i.ra_PFZ_flag age_at_end_ref_yr i.race_recode i.sex_ident_cd i.stroke i.hypertension i.diabetes i.heart i.depressive i.tbi i.smoking i.psychosis2,or
+logistic adrd_dx i.ra_FLUP_flag age_at_end_ref_yr i.race_recode i.sex_ident_cd i.stroke i.hypertension i.diabetes i.heart i.depressive i.tbi i.smoking i.psychosis2,or
+logistic adrd_dx i.ra_PROHYD_flag age_at_end_ref_yr i.race_recode i.sex_ident_cd i.stroke i.hypertension i.diabetes i.heart i.depressive i.tbi i.smoking i.psychosis2,or
+logistic adrd_dx i.ra_NORHYD_flag age_at_end_ref_yr i.race_recode i.sex_ident_cd i.stroke i.hypertension i.diabetes i.heart i.depressive i.tbi i.smoking i.psychosis2,or
+
+translate "J:\Geriatrics\Litke_CMS\2019\Output\in_progress\tables5 05.18.26.smcl" "J:\Geriatrics\Litke_CMS\2019\Output\in_progress\tables5 05.18.26.pdf"
+
+log close 
+
